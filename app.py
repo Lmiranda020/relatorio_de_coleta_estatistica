@@ -265,6 +265,9 @@ if formularios_para_unidade:
                                     
                                     # Salva o arquivo
                                     try:
+                                        # Substitui ponto por vírgula na coluna Quantidade
+                                        if 'Quantidade' in df_formulario.columns:
+                                            df_formulario['Quantidade'] = df_formulario['Quantidade'].astype(str).str.replace('.', ',')
                                         df_formulario.to_csv(arquivo_individual, index=False, encoding="utf-8-sig", sep=";")
                                         st.success(f"✅ {nome_formulario} salvo com sucesso!")
                                         st.info(f"📁 Arquivo salvo: {arquivo_individual}")
@@ -323,6 +326,9 @@ if formularios_para_unidade:
             )
             
             try:
+                # Substitui ponto por vírgula na coluna Quantidade
+                if 'Quantidade' in df_final.columns:
+                    df_final['Quantidade'] = df_final['Quantidade'].astype(str).str.replace('.', ',')
                 df_final.to_csv(arquivo_consolidado, index=False, encoding="utf-8-sig", sep=";")
                 st.success("✅ Arquivo consolidado gerado com sucesso!")
                 st.info(f"📁 Arquivo consolidado: {arquivo_consolidado}")
@@ -344,7 +350,7 @@ if formularios_para_unidade:
     if st.button("🗑️ Limpar Dados Salvos"):
         st.session_state['formularios_data'] = {}
         st.success("✅ Dados salvos foram limpos!")
-        st.experimental_rerun()
+        st.rerun()
 
 else:
     st.info("ℹ️ Nenhum formulário aplicável para a unidade selecionada com as configurações atuais.")
