@@ -345,6 +345,9 @@ class DatabaseManagerPostgres:
         from utils.password_utils import verificar_senha
         
         try:
+            # LOG 1: Tentativa de conexão
+            print(f"🔍 DEBUG: Tentando conectar ao banco para validar {email}")
+            
             query = """
             SELECT nome, unidade, senha_hash, salt, tentativas_login, conta_bloqueada, primeira_vez
             FROM usuarios 
@@ -352,26 +355,43 @@ class DatabaseManagerPostgres:
             """
             
             with self.get_connection() as conn:
+                print(f"✅ DEBUG: Conexão estabelecida com sucesso")
+                
                 with conn.cursor() as cursor:
                     cursor.execute(query, (email,))
                     resultado = cursor.fetchone()
                     
+                    # LOG 2: Verifica se usuário foi encontrado
                     if not resultado:
+                        print(f"❌ DEBUG: Usuário {email} não encontrado no banco")
                         return False, "Usuário não encontrado"
+                    
+                    print(f"✅ DEBUG: Usuário {email} encontrado no banco")
                     
                     nome, unidade, senha_hash, salt, tentativas, bloqueada, primeira_vez = resultado
                     
+                    # LOG 3: Status da conta
+                    print(f"🔍 DEBUG: Conta bloqueada? {bloqueada}")
+                    print(f"🔍 DEBUG: Tentativas: {tentativas}")
+                    print(f"🔍 DEBUG: Primeira vez? {primeira_vez}")
+                    
                     # Verifica se conta está bloqueada
                     if bloqueada:
+                        print(f"⚠️ DEBUG: Conta está bloqueada")
                         return False, "Conta bloqueada. Entre em contato com o suporte."
                     
                     # Verifica se excedeu tentativas
                     if tentativas >= 5:
+                        print(f"⚠️ DEBUG: Excedeu tentativas, bloqueando conta")
                         self.bloquear_conta_usuario(email)
                         return False, "Muitas tentativas de login. Conta bloqueada."
                     
-                    # CORREÇÃO: Verifica a senha com apenas 2 argumentos
-                    if verificar_senha(senha, senha_hash):  # ← REMOVIDO O SALT
+                    # LOG 4: Verificação de senha
+                    print(f"🔍 DEBUG: Verificando senha...")
+                    print(f"🔍 DEBUG: Hash no banco existe? {bool(senha_hash)}")
+                    
+                    if verificar_senha(senha, senha_hash):
+                        print(f"✅ DEBUG: Senha CORRETA!")
                         # Login bem-sucedido
                         self.resetar_tentativas_login(email)
                         
@@ -380,13 +400,17 @@ class DatabaseManagerPostgres:
                         else:
                             return True, unidade
                     else:
+                        print(f"❌ DEBUG: Senha INCORRETA")
                         # Senha incorreta - incrementa tentativas
                         self.incrementar_tentativas_login(email)
                         tentativas_restantes = 5 - (tentativas + 1)
                         return False, f"Senha incorreta. {tentativas_restantes} tentativas restantes."
             
         except Exception as e:
-            print(f"Erro ao validar senha: {e}")
+            # LOG 5: Erro na conexão ou consulta
+            print(f"❌ DEBUG ERRO CRÍTICO: {e}")
+            import traceback
+            print(f"📋 DEBUG TRACEBACK:\n{traceback.format_exc()}")
             return False, f"Erro ao validar login: {str(e)}"
 
     def verificar_usuario_existe(self, email):
