@@ -35,19 +35,29 @@ class DatabaseManagerPostgres:
     # Mas só criar a classe não cria nada concreto ainda. É só o projeto.
 
     def __init__(self):
+        try:
+            # Converte porta para int se vier como string
+            porta = st.secrets["database"]["port"]
+            if isinstance(porta, str):
+                porta = int(porta)
         #Ele é a função que roda automaticamente quando você cria uma instância do objeto.
         # É dentro dele que você define os atributos da instância, que são os dados específicos daquele objeto concreto.
         #Ele é a primeira função que é executada sempre que você cria uma instância da classe
         #self serve para acessar as intancias
         #Ele é a referência para a própria instância que está sendo criada ou usada.
         # Graças a ele, outros métodos da classe podem acessar os atributos dessa instância
-        self.DB_CONFIG = {
-            "host": st.secrets["database"]["host"],
-            "database": st.secrets["database"]["database"],
-            "user": st.secrets["database"]["user"],
-            "password": st.secrets["database"]["password"],
-            "port": int(st.secrets["database"]["port"])  # sempre converter para int
-        }
+            self.DB_CONFIG = {
+                "host": st.secrets["database"]["host"],
+                "database": st.secrets["database"]["database"],
+                "user": st.secrets["database"]["user"],
+                "password": st.secrets["database"]["password"],
+                "port": porta,
+                "connect_timeout": 10,
+                "sslmode": "require"  # IMPORTANTE para Supabase
+            }
+        except Exception as e:
+            print(f"❌ Erro ao configurar banco: {e}")
+            raise
         #o que transforma um valor passado como argumento em atributo da instância é você armazená-lo dentro de self
     
 
