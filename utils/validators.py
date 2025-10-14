@@ -51,15 +51,15 @@ def validar_quantidade_ou_tempo(df, coluna="Quantidade"): # crio uma função, q
 
         # Regex para verificar se o valor estão no  formato HH:MM:SS (24h), ou seja em horas
         padrao_tempo = re.compile(r"^\d{1,2}:\d{2}:\d{2}$") # Quando  usa re.compile(),  está criando um "objeto de função regex", ou seja, algo que você pode guardar em uma variável e depois usar como se fosse uma função
-        """
-        ^	Início da string
-        \d{1,2}	Um ou dois dígitos (ex: 8, 12)
-        :	Dois-pontos literal (separador de tempo)
-        \d{2}	Dois dígitos (ex: 05, 30, 59) — para minutos e segundos
-        :	Outro dois-pontos
-        \d{2}	Dois dígitos novamente
-        $	Final da string
-        """
+        
+        # ^	Início da string
+        # \d{1,2}	Um ou dois dígitos (ex: 8, 12)
+        # :	Dois-pontos literal (separador de tempo)
+        # \d{2}	Dois dígitos (ex: 05, 30, 59) — para minutos e segundos
+        # :	Outro dois-pontos
+        # \d{2}	Dois dígitos novamente
+        # $	Final da string
+        
 
         def eh_valido(valor): # crio outra função que recebe um valor
             if valor == "": # se o valor for vazio, retorna False para onde foi chamado a função
