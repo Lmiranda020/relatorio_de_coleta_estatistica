@@ -449,7 +449,7 @@ if __name__ == "__main__":
     # ============================================
     
     # OPÇÃO 1: TESTE MANUAL (escolha o tipo)
-    # executar_teste_manual(tipo='lembrete')  # Mude para 'lembrete' ou 'urgente' se quiser
+    # executar_teste_manual(tipo='lembrete')  # Mude para 'lembrete' ou 'urgente'
     
     # OPÇÃO 2: PRODUÇÃO (comentar linha acima e descomentar abaixo)
     iniciar_servico_automatico()
