@@ -6,10 +6,18 @@ from dotenv import load_dotenv
 # Carrega as variáveis do .env que está na raiz
 load_dotenv()
 
-EMAIL_HOST = os.getenv("EMAIL_HOST")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT"))
-EMAIL_USER = os.getenv("EMAIL_USER")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+# configutação para roda localmente
+# EMAIL_HOST = os.getenv("EMAIL_HOST")
+# EMAIL_PORT = int(os.getenv("EMAIL_PORT"))
+# EMAIL_USER = os.getenv("EMAIL_USER")
+# EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+
+#configuração para rodar em produção (Streamlit Cloud)
+import streamlit as st
+EMAIL_HOST = st.secrets["email_credentials"]["EMAIL_HOST"]
+EMAIL_PORT = int(st.secrets["email_credentials"]["EMAIL_PORT"])
+EMAIL_USER = st.secrets["email_credentials"]["EMAIL_USER"]
+EMAIL_PASSWORD = st.secrets["email_credentials"]["EMAIL_PASSWORD"]
 
 def enviar_email(destinatario, assunto, corpo):
     try:

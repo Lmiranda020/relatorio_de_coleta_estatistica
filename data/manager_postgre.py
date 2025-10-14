@@ -3,6 +3,7 @@ import psycopg2.extras
 from datetime import datetime
 import numpy as np 
 import json
+import streamlit as st
 
 def sanitizar_dados_extras(dados_extras):
     """Converte tipos numpy/pandas para tipos Python nativos antes de serializar para JSON"""
@@ -41,11 +42,11 @@ class DatabaseManagerPostgres:
         #Ele é a referência para a própria instância que está sendo criada ou usada.
         # Graças a ele, outros métodos da classe podem acessar os atributos dessa instância
         self.DB_CONFIG = {
-            "host": "aws-1-sa-east-1.pooler.supabase.com",
-            "database": "postgres",
-            "user": "postgres.txbsboesbbfxjlllglwr",
-            "password": "Custos@2025",
-            "port": 6543
+            "host": st.secrets["database"]["host"],
+            "database": st.secrets["database"]["database"],
+            "user": st.secrets["database"]["user"],
+            "password": st.secrets["database"]["password"],
+            "port": int(st.secrets["database"]["port"])  # sempre converter para int
         }
         #o que transforma um valor passado como argumento em atributo da instância é você armazená-lo dentro de self
     
