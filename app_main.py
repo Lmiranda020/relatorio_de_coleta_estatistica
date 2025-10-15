@@ -1508,7 +1508,7 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                 
 
                 # Cole isso no seu arquivo principal, ANTES da linha:
-                # resultado_tratativa_criticidade_api = tratativa_criticidade_api(OUTPUT_DIR, competencia_normalizada)
+                # debig para ver os formulario que traz da api e quais estão sendo salvo na memoria do streamlit
 
                 st.markdown("### 🔍 DEBUG - Formulários na Memória")
                 formularios_data = st.session_state.get('formularios_data', {})
@@ -1585,17 +1585,34 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                         dfs_para_consolidar = []
                         formularios_consolidados = []  # Para rastreamento
 
-                        # Lista de formulários de criticidade a ignorar (serão substituídos pela versão tratada)
-                        formularios_criticidade_ignorar = [
-                            "Produção",
-                            "Area_Criticidade_API",
-                            "Área (m²) x Nível de Criticidade (Área Crítica - I)",
-                            "Área (m²) x Nível de Criticidade (Área Semi Crítica)",
-                            "Área (m²) x Nível de Criticidade (Área Não Crítica - I)"
-                        ]
+                        # # Lista de formulários de criticidade a ignorar (serão substituídos pela versão tratada)
+                        # formularios_criticidade_ignorar = [
+                        #     "Produção",
+                        #     "Area_Criticidade_API",
+                        #     "Área (m²) x Nível de Criticidade (Área Crítica - I)",
+                        #     "Área (m²) x Nível de Criticidade (Área Semi Crítica)",
+                        #     "Área (m²) x Nível de Criticidade (Área Não Crítica - I)"
+                        # ]
 
+                        # Lista de formulários a ignorar
+                        formularios_ignorar = ["Produção"]
+
+                        # Verifica se tem dados da API
+                        tem_dados_api = 'Area_Criticidade_API' in st.session_state.get('formularios_data', {})
+
+                        if tem_dados_api:
+                            # Se tem dados da API, ignora os 3 formulários MANUAIS
+                            formularios_ignorar.extend([
+                                "Área (m²) x Nível de Criticidade (Área Crítica - I)",
+                                "Área (m²) x Nível de Criticidade (Área Semi Crítica)",
+                                "Área (m²) x Nível de Criticidade (Área Não Crítica - I)"
+                            ])
+                            st.info("ℹ️ Usando dados de criticidade da API (1 arquivo)")
+                        else:
+                            st.info("ℹ️ Usando formulários de criticidade preenchidos manualmente (3 arquivos)")
+                            
                         for nome, df in st.session_state['formularios_data'].items():
-                            if nome in formularios_criticidade_ignorar:
+                            if nome in formularios_ignorar:
                                 continue
                                 
                             df_limpo = df.copy()
