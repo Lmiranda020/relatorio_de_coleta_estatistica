@@ -211,9 +211,6 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
     # Header do usuário logado
     mostrar_header_usuario() # monstra a parte inicial do sistema, ou seja, o cabeçalho com as informações do usuário logado e o botão de logout
     
-
-    st.info("💡 **Dica:** Após consolidar, você poderá baixar todos os formulários em formato ZIP.")
-
     # Cria 3 colunas: esquerda (logo CEJAM), centro (título), direita (logo SUS)
     col_esq, col_centro, col_dir = st.columns([1, 6, 1]) # 1 ,6, 1 significa que a coluna esquerda terá 1 parte, a do meio terá 6 partes e a da direita terá 1 parte, ou seja, a coluna do meio será maior que as outras duas
 
@@ -260,7 +257,8 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
         st.markdown("[Clique aqui para assistir ao vídeo explicativo](https://www.loom.com/share/your-video-id)")
 
     # Mostra onde os arquivos serão salvos
-    msg1 = st.info(f"📁 **Arquivos serão salvos em:** {OUTPUT_DIR}")
+    st.info("💡 **Dica:** Após consolidar, você poderá baixar todos os formulários em formato ZIP.")
+    # msg1 = st.info(f"📁 **Arquivos serão salvos em:** {OUTPUT_DIR}")
     # Aguarda 3 segundos e remove a mensagem
     # time.sleep(3)
     # msg1.empty()
