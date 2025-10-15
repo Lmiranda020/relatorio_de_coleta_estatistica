@@ -67,139 +67,139 @@ def obter_dias_do_mes(competencia):
         st.error(f"Erro ao processar competência '{competencia}': {str(e)}") #mostra a mensagem com o erro
         return 30  # e retorna 30 como valor padrão
 
-def buscar_arquivos_colaboradores(output_dir):
-    """
-    Busca arquivos CSV que contêm informações sobre colaboradores
-    """
-    # Palavras-chave para identificar arquivos de colaboradores
-    palavras_chave = [
-        "pessoal",
-        "enfermagem", 
-        "colaboradores",
-        "terceiros"
-    ]
-    palavra_excluir = "total"
+# def buscar_arquivos_colaboradores(output_dir):
+#     """
+#     Busca arquivos CSV que contêm informações sobre colaboradores
+#     """
+#     # Palavras-chave para identificar arquivos de colaboradores
+#     palavras_chave = [
+#         "pessoal",
+#         "enfermagem", 
+#         "colaboradores",
+#         "terceiros"
+#     ]
+#     palavra_excluir = "total"
 
-    arquivos_encontrados = [] #cria um lista para armazenar os itens
+#     arquivos_encontrados = [] #cria um lista para armazenar os itens
 
     
-    # Lista todos os arquivos CSV na pasta
-    if os.path.exists(output_dir): #se existir arquivos no diretorio
-        for arquivo in os.listdir(output_dir): # para cada arquivo nesse diretorio
-            if arquivo.endswith('.csv'): # verfiicar se finaliza com csv
-                # Verifica se alguma palavra-chave está no nome do arquivo
-                nome_lower = arquivo.lower() # coloca o nome do arquivo todo minusculo
-                # Verifica se contém a palavra a ser excluída
-                if palavra_excluir in nome_lower:
-                    continue  # Pula este arquivo se contém "criticidade"
-                for palavra in palavras_chave: # verifico se cada palavra da minha lista de palavras chaves
-                    if palavra in nome_lower:
-                        caminho_completo = os.path.join(output_dir, arquivo)
-                        arquivos_encontrados.append({
-                            'arquivo': arquivo,
-                            'caminho': caminho_completo,
-                            'palavra_chave': palavra
-                        })
-                        break  # para na primeira palavra chave que possui no nome do arquivo. E sai desse loop indo para o proximo arquivo no loop "for arquivo in os.listdir(output_dir)"
+#     # Lista todos os arquivos CSV na pasta
+#     if os.path.exists(output_dir): #se existir arquivos no diretorio
+#         for arquivo in os.listdir(output_dir): # para cada arquivo nesse diretorio
+#             if arquivo.endswith('.csv'): # verfiicar se finaliza com csv
+#                 # Verifica se alguma palavra-chave está no nome do arquivo
+#                 nome_lower = arquivo.lower() # coloca o nome do arquivo todo minusculo
+#                 # Verifica se contém a palavra a ser excluída
+#                 if palavra_excluir in nome_lower:
+#                     continue  # Pula este arquivo se contém "criticidade"
+#                 for palavra in palavras_chave: # verifico se cada palavra da minha lista de palavras chaves
+#                     if palavra in nome_lower:
+#                         caminho_completo = os.path.join(output_dir, arquivo)
+#                         arquivos_encontrados.append({
+#                             'arquivo': arquivo,
+#                             'caminho': caminho_completo,
+#                             'palavra_chave': palavra
+#                         })
+#                         break  # para na primeira palavra chave que possui no nome do arquivo. E sai desse loop indo para o proximo arquivo no loop "for arquivo in os.listdir(output_dir)"
     
-    return arquivos_encontrados
+#     return arquivos_encontrados
 
-def consolidar_funcionarios_por_centro_custo(arquivos_colaboradores, competencia):
-    """
-    Consolida todos os arquivos de funcionários agrupando por centro de custo
-    Soma as quantidades de todos os arquivos para cada centro de custo
-    """
-    todos_dados = []
+# def consolidar_funcionarios_por_centro_custo(arquivos_colaboradores, competencia):
+#     """
+#     Consolida todos os arquivos de funcionários agrupando por centro de custo
+#     Soma as quantidades de todos os arquivos para cada centro de custo
+#     """
+#     todos_dados = []
     
-    st.info("🔄 Processando arquivos de funcionários...")
+#     st.info("🔄 Processando arquivos de funcionários...")
     
-    #arquivo colaboradores é uma lista, onde cada item é um dicionário
-    for item in arquivos_colaboradores:
-        try:
-            # Lê o arquivo CSV, e aí eu passo o caminho completo do arquivo
-            df = pd.read_csv(item['caminho'], sep=';', encoding='utf-8-sig')
+#     #arquivo colaboradores é uma lista, onde cada item é um dicionário
+#     for item in arquivos_colaboradores:
+#         try:
+#             # Lê o arquivo CSV, e aí eu passo o caminho completo do arquivo
+#             df = pd.read_csv(item['caminho'], sep=';', encoding='utf-8-sig')
             
-            # Normaliza os nomes das colunas, removendo espaços
-            df.columns = df.columns.str.strip()
+#             # Normaliza os nomes das colunas, removendo espaços
+#             df.columns = df.columns.str.strip()
             
-            # Verifica se tem a coluna Quantidade, se não tiver mostra o aviso e pula, ou seja, não continua o restante do codigo com esse arquivo, pula para o proximo arquivo, ou seja, o prox item da linha lista
-            if 'Quantidade' not in df.columns:
-                st.warning(f"Arquivo {item['arquivo']} não possui coluna 'Quantidade' - ignorando")
-                continue
+#             # Verifica se tem a coluna Quantidade, se não tiver mostra o aviso e pula, ou seja, não continua o restante do codigo com esse arquivo, pula para o proximo arquivo, ou seja, o prox item da linha lista
+#             if 'Quantidade' not in df.columns:
+#                 st.warning(f"Arquivo {item['arquivo']} não possui coluna 'Quantidade' - ignorando")
+#                 continue
             
-            # Converte quantidade para numérico (trata vírgulas como separador decimal)
-            df['Quantidade'] = df['Quantidade'].astype(str).str.replace(',', '.', regex=False)
-            df['Quantidade'] = pd.to_numeric(df['Quantidade'], errors='coerce').fillna(0)
-            '''
-            O pd.to_numeric pode gerar int64 ou float64, dependendo dos valores.
-            errors='coerce' transforma valores inválidos em NaN
-            O fillna(0) troca esses NaN por zero
-            '''
+#             # Converte quantidade para numérico (trata vírgulas como separador decimal)
+#             df['Quantidade'] = df['Quantidade'].astype(str).str.replace(',', '.', regex=False)
+#             df['Quantidade'] = pd.to_numeric(df['Quantidade'], errors='coerce').fillna(0)
+#             '''
+#             O pd.to_numeric pode gerar int64 ou float64, dependendo dos valores.
+#             errors='coerce' transforma valores inválidos em NaN
+#             O fillna(0) troca esses NaN por zero
+#             '''
             
-            # Remove registros com quantidade zero, filtrando apenas valores maiores que 0
-            df = df[df['Quantidade'] > 0]
+#             # Remove registros com quantidade zero, filtrando apenas valores maiores que 0
+#             df = df[df['Quantidade'] > 0]
             
-            if df.empty: #se a base final for vazia, exemplo, só tinha valores zarados
-                st.warning(f"Arquivo {item['arquivo']} não possui registros válidos - ignorando") #mostra o aviso e pula para o prox arquivo, não executa as proximas linhas de codigo com esse arquivo
-                continue
+#             if df.empty: #se a base final for vazia, exemplo, só tinha valores zarados
+#                 st.warning(f"Arquivo {item['arquivo']} não possui registros válidos - ignorando") #mostra o aviso e pula para o prox arquivo, não executa as proximas linhas de codigo com esse arquivo
+#                 continue
             
-            # Trata centro de custo
-            if 'Centro de Custo' not in df.columns: # se não contiver a coluna de centro de custo
-                df['Centro de Custo'] = 'Não Informado' # cria uma com valor padrão "Não Informado"
-            else:
-                df['Centro de Custo'] = df['Centro de Custo'].fillna('Não Informado') #agora se existe a coluna mas possui valores nulos, ou seja, algumas está em branco, preeche com o valor padrão também "Não Informado" 
+#             # Trata centro de custo
+#             if 'Centro de Custo' not in df.columns: # se não contiver a coluna de centro de custo
+#                 df['Centro de Custo'] = 'Não Informado' # cria uma com valor padrão "Não Informado"
+#             else:
+#                 df['Centro de Custo'] = df['Centro de Custo'].fillna('Não Informado') #agora se existe a coluna mas possui valores nulos, ou seja, algumas está em branco, preeche com o valor padrão também "Não Informado" 
             
-            # Adiciona competência se não existir
-            if 'Competência' not in df.columns: # se não existe a coluna de compentencia
-                df['Competência'] = competencia #cria ela com o valor da competencia escolhida
+#             # Adiciona competência se não existir
+#             if 'Competência' not in df.columns: # se não existe a coluna de compentencia
+#                 df['Competência'] = competencia #cria ela com o valor da competencia escolhida
             
-            # Adiciona informação do arquivo de origem para controle
-            # df['Arquivo_Origem'] = item['arquivo'] # adiciona no dataframe uma coluna "Arquivo_Origem" com o valor "arquivo" que é o nome do arquivo
+#             # Adiciona informação do arquivo de origem para controle
+#             # df['Arquivo_Origem'] = item['arquivo'] # adiciona no dataframe uma coluna "Arquivo_Origem" com o valor "arquivo" que é o nome do arquivo
             
-            # Seleciona apenas as colunas necessárias
-            df_selecionado = df[['Competência', 'Centro de Custo', 'Quantidade']]
+#             # Seleciona apenas as colunas necessárias
+#             df_selecionado = df[['Competência', 'Centro de Custo', 'Quantidade']]
 
-            # df_selecionado = df[['Competencia', 'Centro de Custo', 'Quantidade', 'Arquivo_Origem']] #não precisa da coluna de arquivo_origem
+#             # df_selecionado = df[['Competencia', 'Centro de Custo', 'Quantidade', 'Arquivo_Origem']] #não precisa da coluna de arquivo_origem
             
-            todos_dados.append(df_selecionado) #adiciona o dataframe na lista
+#             todos_dados.append(df_selecionado) #adiciona o dataframe na lista
     
             
-            st.success(f"✅ {item['arquivo']}: {len(df_selecionado)} registros, {df_selecionado['Quantidade'].sum()} funcionários") # no final informa uma mensagem de sucesso, informando o nomr do arquivo, quantidade de itens e o total de funcionários
+#             st.success(f"✅ {item['arquivo']}: {len(df_selecionado)} registros, {df_selecionado['Quantidade'].sum()} funcionários") # no final informa uma mensagem de sucesso, informando o nomr do arquivo, quantidade de itens e o total de funcionários
             
-        except Exception as e: # caso de algum erro, pega o erro e mostra na tela para o usuario
-            st.error(f"❌ Erro ao processar {item['arquivo']}: {str(e)}")
-            continue # e continua com outro arquivo
+#         except Exception as e: # caso de algum erro, pega o erro e mostra na tela para o usuario
+#             st.error(f"❌ Erro ao processar {item['arquivo']}: {str(e)}")
+#             continue # e continua com outro arquivo
 
-    #terminou o loop paracada item (arquivo)
-    if not todos_dados: # se não contiver nada na lista
-        st.error("Nenhum arquivo foi processado com sucesso") # monstrar uma mensagem de erro
-        return None # retorna none e o detalhe do processamento
+#     #terminou o loop paracada item (arquivo)
+#     if not todos_dados: # se não contiver nada na lista
+#         st.error("Nenhum arquivo foi processado com sucesso") # monstrar uma mensagem de erro
+#         return None # retorna none e o detalhe do processamento
     
-    # Concatena todos os dados de todos os arquivos, ele apenas empilha todos os arquivos um embaixo do outro 
-    df_todos = pd.concat(todos_dados, ignore_index=True)
+#     # Concatena todos os dados de todos os arquivos, ele apenas empilha todos os arquivos um embaixo do outro 
+#     df_todos = pd.concat(todos_dados, ignore_index=True)
     
-    # Faz uma única consolidação por Centro de Custo, somando as quantidades de todos os arquivos
-    st.info("🔄 Consolidando dados por Centro de Custo...")
+#     # Faz uma única consolidação por Centro de Custo, somando as quantidades de todos os arquivos
+#     st.info("🔄 Consolidando dados por Centro de Custo...")
     
-    #agora agrupo o dataframe por centro de custo
-    df_consolidado = df_todos.groupby('Centro de Custo').agg({ #agg define como resumir as outras colunas dentro de cada grupo
-        'Quantidade': 'sum',  # Soma as quantidades de todos os arquivos
-        'Competência': 'first' #pego apenas o primeiro
-        # 'Arquivo_Origem': lambda x: '; '.join(sorted(set(x)))  # junta todos os nomes de arquivos (sem repetição), separados por ; (SET -> cria um conjunto com todos os valore, removendo os duplicados; SORTED -> ordena os valores em ordem alfabetica; JOIN -> junta todos com o delmitador )
-        #o x não é uma célula, e sim toda a coluna Arquivo_Origem daquele CENTRO DE CUSTO  eu está sendo agrupado
-    }).reset_index() # reseta o index
+#     #agora agrupo o dataframe por centro de custo
+#     df_consolidado = df_todos.groupby('Centro de Custo').agg({ #agg define como resumir as outras colunas dentro de cada grupo
+#         'Quantidade': 'sum',  # Soma as quantidades de todos os arquivos
+#         'Competência': 'first' #pego apenas o primeiro
+#         # 'Arquivo_Origem': lambda x: '; '.join(sorted(set(x)))  # junta todos os nomes de arquivos (sem repetição), separados por ; (SET -> cria um conjunto com todos os valore, removendo os duplicados; SORTED -> ordena os valores em ordem alfabetica; JOIN -> junta todos com o delmitador )
+#         #o x não é uma célula, e sim toda a coluna Arquivo_Origem daquele CENTRO DE CUSTO  eu está sendo agrupado
+#     }).reset_index() # reseta o index
     
-    # Adiciona a ponderação fixa para o arquivo consolidado
-    df_consolidado['Ponderação'] = 'Total Colaboradores'
+#     # Adiciona a ponderação fixa para o arquivo consolidado
+#     df_consolidado['Ponderação'] = 'Total Colaboradores'
     
-    # Reordena as colunas no padrão esperado
-    #df_consolidado = df_consolidado[['Competencia', 'Centro de Custo', 'Ponderação', 'Quantidade', 'Arquivo_Origem']]
-    df_consolidado = df_consolidado[['Competência', 'Centro de Custo', 'Ponderação', 'Quantidade']]
+#     # Reordena as colunas no padrão esperado
+#     #df_consolidado = df_consolidado[['Competencia', 'Centro de Custo', 'Ponderação', 'Quantidade', 'Arquivo_Origem']]
+#     df_consolidado = df_consolidado[['Competência', 'Centro de Custo', 'Ponderação', 'Quantidade']]
     
-    st.success(f"✅ Consolidação concluída: {len(df_consolidado)} centros de custo únicos")
-    st.info(f"📊 Total geral de colaboradores: {df_consolidado['Quantidade'].sum()}")
+#     st.success(f"✅ Consolidação concluída: {len(df_consolidado)} centros de custo únicos")
+#     st.info(f"📊 Total geral de colaboradores: {df_consolidado['Quantidade'].sum()}")
     
-    return df_consolidado
+#     return df_consolidado
 
 def salvar_arquivo_consolidado(df_consolidado, output_dir, competencia, unidade):
     """
@@ -344,81 +344,81 @@ def apenas_dias_uteis(competencia, dias_totais):
         return dias_totais  # Retorna o total como fallback
 
 
-def buscar_arquivos_cme(output_dir):
-    """
-    Placeholder para carregar outras bases necessárias no futuro
-    """
+# def buscar_arquivos_cme(output_dir):
+#     """
+#     Placeholder para carregar outras bases necessárias no futuro
+#     """
     
-    palavra_chave_cme = "cme"
+#     palavra_chave_cme = "cme"
 
-    # Lista todos os arquivos CSV na pasta
-    if os.path.exists(output_dir):
-        for arquivo in os.listdir(output_dir):
-            if arquivo.endswith('.csv'):
-                # Verifica se alguma palavra-chave está no nome do arquivo
-                nome_lower = arquivo.lower()
-                if palavra_chave_cme in nome_lower:
-                    caminho_completo = os.path.join(output_dir, arquivo)
-                    # Lê o CSV com Pandas e retorna o DataFrame diretamente
-                    base_cme = pd.read_csv(caminho_completo, sep=";", encoding='utf-8-sig')
-                    if "Competencia" in base_cme.columns:
-                        base_cme = base_cme.rename(columns={"Competencia": "Competência"})
-                    return base_cme  # retorna só o primeiro encontrado
+#     # Lista todos os arquivos CSV na pasta
+#     if os.path.exists(output_dir):
+#         for arquivo in os.listdir(output_dir):
+#             if arquivo.endswith('.csv'):
+#                 # Verifica se alguma palavra-chave está no nome do arquivo
+#                 nome_lower = arquivo.lower()
+#                 if palavra_chave_cme in nome_lower:
+#                     caminho_completo = os.path.join(output_dir, arquivo)
+#                     # Lê o CSV com Pandas e retorna o DataFrame diretamente
+#                     base_cme = pd.read_csv(caminho_completo, sep=";", encoding='utf-8-sig')
+#                     if "Competencia" in base_cme.columns:
+#                         base_cme = base_cme.rename(columns={"Competencia": "Competência"})
+#                     return base_cme  # retorna só o primeiro encontrado
 
-    return None  # caso não encontre nenhum
+#     return None  # caso não encontre nenhum
 
 
-def buscar_arquivos_producao(output_dir):
-    """
-    Placeholder para carregar outras bases necessárias no futuro
-    """   
-    palavras_chave_producao = 'produção'
+# def buscar_arquivos_producao(output_dir):
+#     """
+#     Placeholder para carregar outras bases necessárias no futuro
+#     """   
+#     palavras_chave_producao = 'produção'
 
-    # Lista todos os arquivos CSV na pasta
-    if os.path.exists(output_dir):
-        for arquivo in os.listdir(output_dir):
-            if arquivo.endswith('.csv'):
-                # Verifica se alguma palavra-chave está no nome do arquivo
-                nome_lower = arquivo.lower()
-                if palavras_chave_producao in nome_lower:
-                    caminho_completo = os.path.join(output_dir, arquivo)
-                    # Lê o CSV com Pandas e retorna o DataFrame diretamente
-                    base_producao = pd.read_csv(caminho_completo, sep=";", encoding='utf-8-sig')
-                    base_producao["Ponderação"] = base_producao["Ponderação"] = "Produção"
-                    if "Competencia" in base_producao.columns:
-                        base_producao = base_producao.rename(columns={"Competencia": "Competência"})
-                    return base_producao  # retorna só o primeiro encontrado
+#     # Lista todos os arquivos CSV na pasta
+#     if os.path.exists(output_dir):
+#         for arquivo in os.listdir(output_dir):
+#             if arquivo.endswith('.csv'):
+#                 # Verifica se alguma palavra-chave está no nome do arquivo
+#                 nome_lower = arquivo.lower()
+#                 if palavras_chave_producao in nome_lower:
+#                     caminho_completo = os.path.join(output_dir, arquivo)
+#                     # Lê o CSV com Pandas e retorna o DataFrame diretamente
+#                     base_producao = pd.read_csv(caminho_completo, sep=";", encoding='utf-8-sig')
+#                     base_producao["Ponderação"] = base_producao["Ponderação"] = "Produção"
+#                     if "Competencia" in base_producao.columns:
+#                         base_producao = base_producao.rename(columns={"Competencia": "Competência"})
+#                     return base_producao  # retorna só o primeiro encontrado
 
-    return None  # caso não encontre nenhum
+#     return None  # caso não encontre nenhum
 
-def buscar_arquivos_area(output_dir):
-    """
-    Placeholder para carregar outras bases necessárias no futuro
-    """
-    # Lista todos os arquivos CSV na pasta
+# def buscar_arquivos_area(output_dir):
+#     """
+#     Placeholder para carregar outras bases necessárias no futuro
+#     """
+#     # Lista todos os arquivos CSV na pasta
 
-    palavra_excluir = "criticidade"
-    palavra_chave_area = "área"
+#     palavra_excluir = "criticidade"
+#     palavra_chave_area = "área"
 
-    if os.path.exists(output_dir):
-        for arquivo in os.listdir(output_dir):
-            if arquivo.endswith('.csv'):
-                # Verifica se alguma palavra-chave está no nome do arquivo
-                nome_lower = arquivo.lower()
+#     if os.path.exists(output_dir):
+#         for arquivo in os.listdir(output_dir):
+#             if arquivo.endswith('.csv'):
+#                 # Verifica se alguma palavra-chave está no nome do arquivo
+#                 nome_lower = arquivo.lower()
 
-                # Verifica se contém a palavra a ser excluída
-                if palavra_excluir in nome_lower:
-                    continue  # Pula este arquivo se contém "criticidade"
+#                 # Verifica se contém a palavra a ser excluída
+#                 if palavra_excluir in nome_lower:
+#                     continue  # Pula este arquivo se contém "criticidade"
 
-                if palavra_chave_area in nome_lower:
-                    caminho_completo = os.path.join(output_dir, arquivo)
-                    # Lê o CSV com Pandas e retorna o DataFrame diretamente
-                    base_area = pd.read_csv(caminho_completo, sep=";", encoding='utf-8-sig')
-                    if "Competencia" in base_area.columns:
-                        base_area = base_area.rename(columns={"Competencia": "Competência"})
-                    return base_area  # retorna só o primeiro encontrado
+#                 if palavra_chave_area in nome_lower:
+#                     caminho_completo = os.path.join(output_dir, arquivo)
+#                     # Lê o CSV com Pandas e retorna o DataFrame diretamente
+#                     base_area = pd.read_csv(caminho_completo, sep=";", encoding='utf-8-sig')
+#                     if "Competencia" in base_area.columns:
+#                         base_area = base_area.rename(columns={"Competencia": "Competência"})
+#                     return base_area  # retorna só o primeiro encontrado
 
-    return None  # caso não encontre nenhum
+#     return None  # caso não encontre nenhum
 
 
 def multiplicacao_das_bases(base_a_ser_multiplicada, base_com_os_valores_p_multiplicar):
