@@ -33,7 +33,7 @@ def tratativa_criticidade_api(output_dir, competencia):
         st.error(f"Erro ao carregar arquivo de de-para: {e}")
         return False
 
-    inicio_arquivo = "Area_Criticidade_API"
+    inicio_arquivo = f'Area_Criticidade_API{competencia}'
     
     with temp_container.container():
         st.info("🔍 Procurando arquivos para processar...")
