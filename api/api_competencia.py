@@ -1,14 +1,10 @@
 import requests
-
 import json
-
 import pandas as pd
-
 import streamlit as st
-
+import base64
 
 def get_competencias():
-
 
     unidade_selecionanda = st.session_state.get('unidade_usuario')
 
@@ -17,10 +13,8 @@ def get_competencias():
         # print(f"DEBUG: RETORNANDO CACHE (pode estar desatualizado)")
         return st.session_state['df_competencias_cache']
  
-
-    from config.constants import TOKEN_UNIDADES_EXPORTACAO_DF
-
-    df_unidades = TOKEN_UNIDADES_EXPORTACAO_DF
+    # Carregar tokens aqui dentro da função
+    df_unidades = carregar_tokens_exportacao()
 
     # DEBUG: Mostrar quantas unidades existem no total
     # print(f"DEBUG: Total de unidades no arquivo: {len(df_unidades)}")
@@ -76,3 +70,25 @@ def get_competencias():
         return df_final #retona o dataframe final
     
     return pd.DataFrame() #retorno a base de competências vazia se não encontrar nada
+
+
+def carregar_tokens_exportacao():
+    """
+    Carrega os tokens de exportação do secrets e converte de base64 para DataFrame
+    """
+    try:
+        # Acessa o secret
+        token_base64 = st.secrets["excel_tokens_exportacao_base64"]
+        
+        # Decodifica de base64
+        token_decoded = base64.b64decode(token_base64)
+        
+        # Carrega o Excel a partir dos bytes decodificados
+        from io import BytesIO
+        df_tokens = pd.read_excel(BytesIO(token_decoded))
+        
+        return df_tokens
+        
+    except Exception as e:
+        st.error(f"Erro ao carregar tokens de exportação: {e}")
+        return pd.DataFrame()
