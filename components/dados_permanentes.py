@@ -388,23 +388,16 @@ def salvar_dados_permanentes_individuais(dados_filtrados, competencia_selecionad
                     if 'formularios_data' not in st.session_state:
                         st.session_state['formularios_data'] = {}
                     
-                    # Salvar APENAS com nome único da API (não marcar os 3 manuais)
-                    nome_chave_memoria = "Area_Criticidade_API"
-                    st.session_state['formularios_data'][nome_chave_memoria] = df.copy()
-
-                    st.success(f"Arquivo único de criticidade salvo: {nome_arquivo} ({len(df)} registros)")
-                    st.success(f"✅ Salvo na memória como: {nome_chave_memoria}")
-
-                    # # Lista CORRIGIDA dos três formulários de criticidade
-                    # formularios_criticidade = [
-                    #     "Área (m²) x Nível de Criticidade (Área Crítica - I)",
-                    #     "Área (m²) x Nível de Criticidade (Área Semi Crítica)", 
-                    #     "Área (m²) x Nível de Criticidade (Área Não Crítica - I)"
-                    # ]
+                    # Lista CORRIGIDA dos três formulários de criticidade
+                    formularios_criticidade = [
+                        "Área (m²) x Nível de Criticidade (Área Crítica - I)",
+                        "Área (m²) x Nível de Criticidade (Área Semi Crítica)", 
+                        "Área (m²) x Nível de Criticidade (Área Não Crítica - I)"
+                    ]
                     
-                    # # Marcar todos os três como preenchidos com o mesmo DataFrame
-                    # for form_criticidade in formularios_criticidade:
-                    #     st.session_state['formularios_data'][form_criticidade] = df.copy()
+                    # Marcar todos os três como preenchidos com o mesmo DataFrame
+                    for form_criticidade in formularios_criticidade:
+                        st.session_state['formularios_data'][form_criticidade] = df.copy()
                     
                     st.success(f"Arquivo único de criticidade salvo: {nome_arquivo} ({len(df)} registros)")
                     st.success(f"✅ Marcados como processados: {len(formularios_criticidade)} formulários de criticidade")
