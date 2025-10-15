@@ -14,13 +14,13 @@ load_dotenv()
 
 #configuração para rodar em produção (Streamlit Cloud)
 import streamlit as st
-EMAIL_HOST = st.secrets["email_credentials"]["EMAIL_HOST"]
-EMAIL_PORT = int(st.secrets["email_credentials"]["EMAIL_PORT"])
-EMAIL_USER = st.secrets["email_credentials"]["EMAIL_USER"]
-EMAIL_PASSWORD = st.secrets["email_credentials"]["EMAIL_PASSWORD"]
 
 def enviar_email(destinatario, assunto, corpo):
     try:
+        EMAIL_HOST = st.secrets["email_credentials"]["EMAIL_HOST"]
+        EMAIL_PORT = int(st.secrets["email_credentials"]["EMAIL_PORT"])
+        EMAIL_USER = st.secrets["email_credentials"]["EMAIL_USER"]
+        EMAIL_PASSWORD = st.secrets["email_credentials"]["EMAIL_PASSWORD"]
         msg = EmailMessage()
         msg["Subject"] = assunto
         msg["From"] = EMAIL_USER
