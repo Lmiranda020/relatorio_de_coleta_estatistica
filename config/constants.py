@@ -36,7 +36,7 @@ def carregar_tokens_importacao():
     try:
         # Tenta carregar dos secrets (Streamlit Cloud)
         if "excel_tokens_importacao_base64" in st.secrets:
-            excel_base64 = st.secrets["excel_tokens_importacao_base64"]
+            excel_base64 = st.secrets["tokens"]["excel_tokens_importacao_base64"]
             excel_bytes = base64.b64decode(excel_base64)
             df = pd.read_excel(BytesIO(excel_bytes))
             
@@ -80,7 +80,7 @@ def carregar_tokens_exportacao():
     try:
         # Tenta carregar dos secrets (Streamlit Cloud)
         if "excel_tokens_exportacao_base64" in st.secrets:
-            excel_base64 = st.secrets["excel_tokens_exportacao_base64"]
+            excel_base64 = st.secrets["tokens"]["excel_tokens_exportacao_base64"]
             excel_bytes = base64.b64decode(excel_base64)
             df = pd.read_excel(BytesIO(excel_bytes))
             
