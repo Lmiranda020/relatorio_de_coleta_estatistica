@@ -1506,6 +1506,19 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                 if 'Area_Criticidade_API' in st.session_state.get('formularios_data', {}):
                     del st.session_state['formularios_data']['Area_Criticidade_API']
                 
+
+                # Cole isso no seu arquivo principal, ANTES da linha:
+                # resultado_tratativa_criticidade_api = tratativa_criticidade_api(OUTPUT_DIR, competencia_normalizada)
+
+                st.markdown("### 🔍 DEBUG - Formulários na Memória")
+                formularios_data = st.session_state.get('formularios_data', {})
+
+                st.write(f"**Total:** {len(formularios_data)} formulários")
+
+                for nome in formularios_data.keys():
+                    st.write(f"- `{nome}`")
+
+                st.markdown("---")
                 # PASSO 2: Executar tratativa de criticidade
                 resultado_tratativa_criticidade_api = tratativa_criticidade_api(OUTPUT_DIR, competencia_normalizada)
                 
