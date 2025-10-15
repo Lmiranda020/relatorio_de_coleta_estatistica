@@ -39,27 +39,27 @@ def tratativa_criticidade_api(output_dir, competencia):
         st.info("🔍 Procurando arquivos para processar...")
     
     # Lista todos os arquivos no diretório
-    try:
-        arquivos = os.listdir(output_dir)
-    except FileNotFoundError:
-        temp_container.empty()
-        st.error(f"Erro: Diretório não encontrado: {output_dir}")
-        return False
+        formularios_data = st.session_state.get('formularios_data', {})
     
-    # Filtra apenas os arquivos que começam com o prefixo desejado
-    arquivos_filtrados = [arquivo for arquivo in arquivos 
-                         if arquivo.startswith(inicio_arquivo) and arquivo.endswith('.csv')]
+    # Procura por chaves que começam com "Area_Criticidade_API"
+    # e que contenham a competência (para evitar pegar competências antigas)
+    arquivos_encontrados = []
     
-    if not arquivos_filtrados:
+    for nome_formulario in formularios_data.keys():
+        # Verifica se é um formulário de criticidade da API
+        if nome_formulario.startswith("Area_Criticidade_API"):
+            arquivos_encontrados.append(nome_formulario)
+    
+    if not arquivos_encontrados:
         temp_container.empty()
         st.error(f"Nenhum arquivo encontrado com o prefixo '{inicio_arquivo}' no diretório {output_dir}")
         return False
     
     with temp_container.container():
-        st.info(f"📁 Encontrados {len(arquivos_filtrados)} arquivo(s) para processar")
+        st.info(f"📁 Encontrados {len(arquivos_encontrados)} arquivo(s) para processar")
     
     # Processa cada arquivo encontrado
-    for arquivo in arquivos_filtrados:
+    for arquivo in arquivos_encontrados:
         caminho_arquivo = os.path.join(output_dir, arquivo)
         
         with temp_container.container():
