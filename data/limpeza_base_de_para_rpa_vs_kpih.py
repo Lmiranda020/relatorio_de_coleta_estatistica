@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 from typing import List, Dict, Any
-from config.constants import TOKEN_UNIDADES_IMPORTACAO_DF
+from config.constants import get_token_unidades_importacao
 
 
 def ajustar_competencia(competencia: str) -> str:
@@ -165,6 +165,7 @@ def obter_token_por_unidade_id() -> str:
         st.info(f"🔍 Buscando token para unidade ID: {unidade_id}")
         
         # 2. Verificar se o DataFrame foi carregado
+        TOKEN_UNIDADES_IMPORTACAO_DF = get_token_unidades_importacao()
         if TOKEN_UNIDADES_IMPORTACAO_DF.empty:
             st.error("❌ Arquivo de tokens não foi carregado corretamente")
             return ""

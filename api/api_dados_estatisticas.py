@@ -2,9 +2,12 @@ import requests
 import pandas as pd
 import streamlit as st
 
-from config.constants import TOKEN_UNIDADES_EXPORTACAO_DF
+# from config.constants import TOKEN_UNIDADES_EXPORTACAO_DF
 
-df_unidades = TOKEN_UNIDADES_EXPORTACAO_DF
+# df_unidades = TOKEN_UNIDADES_EXPORTACAO_DF
+
+from config.constants import get_token_unidades_exportacao
+df_unidades = get_token_unidades_exportacao()
 
 def get_dados_permanentes(competencia_valida, payload_data):
     """

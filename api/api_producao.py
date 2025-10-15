@@ -15,8 +15,10 @@ def api_producao():
 
         # Carrega o arquivo de unidades
         try:
-            from config.constants import TOKEN_UNIDADES_EXPORTACAO_DF
-            df_unidades = TOKEN_UNIDADES_EXPORTACAO_DF
+            # from config.constants import TOKEN_UNIDADES_EXPORTACAO_DF
+            # df_unidades = TOKEN_UNIDADES_EXPORTACAO_DF
+            from config.constants import get_token_unidades_exportacao
+            df_unidades = get_token_unidades_exportacao()
         except FileNotFoundError:
             st.error("❌ Arquivo 'unidades_tokens_cejam_exportacao.xlsx' não encontrado!")
             return {}
