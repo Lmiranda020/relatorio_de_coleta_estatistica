@@ -78,7 +78,7 @@ def carregar_tokens_exportacao():
     """
     try:
         # Acessa o secret
-        token_base64 = st.secrets["excel_tokens_exportacao_base64"]
+        token_base64 = st.secrets["tokens"]["excel_tokens_exportacao_base64"]
         
         # Decodifica de base64
         token_decoded = base64.b64decode(token_base64)
