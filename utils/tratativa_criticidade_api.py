@@ -9,7 +9,7 @@ def tratativa_criticidade_api(output_dir, competencia):
     Função para tratar arquivos de criticidade da API aplicando de-para na coluna de ponderação
     
     Args:
-        output_dir (str): Diretório onde os arquivos serão salvos
+        output_dir (str): Diretório onde estão os arquivos
         competencia (str): Competência para processamento
     """
     
@@ -36,11 +36,9 @@ def tratativa_criticidade_api(output_dir, competencia):
     inicio_arquivo = "Area_Criticidade_API"
     
     with temp_container.container():
-        st.info("🔍 Procurando arquivos para processar na memória...")
+        st.info("🔍 Procurando arquivos para processar...")
     
-    # ========================================================================
-    # BUSCA NA MEMÓRIA (session_state)
-    # ========================================================================
+    # Busca na memória do Streamlit
     formularios_data = st.session_state.get('formularios_data', {})
     
     # Procura por chaves que começam com "Area_Criticidade_API"
@@ -54,26 +52,24 @@ def tratativa_criticidade_api(output_dir, competencia):
     if not arquivos_encontrados:
         temp_container.empty()
         st.warning(f"⚠️ Nenhum arquivo encontrado com o prefixo '{inicio_arquivo}' na memória")
-        st.info("Isso é normal se você preencheu os formulários manualmente (3 arquivos separados)")
-        return True  # Retorna True porque não é erro
+        st.info("Isso é normal se você preencheu os formulários manualmente")
+        return True  # Retorna True pois não é erro
     
     with temp_container.container():
         st.info(f"📁 Encontrados {len(arquivos_encontrados)} arquivo(s) para processar")
     
     # Processa cada arquivo encontrado
-    for nome_formulario in arquivos_encontrados:
+    for arquivo in arquivos_encontrados:
         
         with temp_container.container():
-            st.info(f"⚙️ Processando: {nome_formulario}")
+            st.info(f"⚙️ Processando arquivo: {arquivo}")
         
         try:
-            # ========================================================================
-            # LÊ DA MEMÓRIA (NÃO DO DISCO!)
-            # ========================================================================
-            df_original = formularios_data[nome_formulario].copy()
+            # ✅ Lê da MEMÓRIA (não do disco)
+            df_original = formularios_data[arquivo].copy()
             
             with temp_container.container():
-                st.info(f"📊 Dados carregados com {len(df_original)} registros")
+                st.info(f"📊 Arquivo carregado com {len(df_original)} registros")
             
             # Limpa espaços extras dos nomes das colunas
             df_original.columns = df_original.columns.str.strip()
@@ -81,13 +77,13 @@ def tratativa_criticidade_api(output_dir, competencia):
             # Verifica se as colunas necessárias existem
             if 'Centro de Custo' not in df_original.columns:
                 temp_container.empty()
-                st.error(f"Erro: Coluna 'Centro de Custo' não encontrada em {nome_formulario}")
+                st.error(f"Erro: Coluna 'Centro de Custo' não encontrada no arquivo {arquivo}")
                 st.error(f"Colunas disponíveis: {list(df_original.columns)}")
                 return False
                 
             if 'Ponderação' not in df_original.columns:
                 temp_container.empty()
-                st.warning(f"Aviso: Coluna 'Ponderação' não encontrada em {nome_formulario}")
+                st.warning(f"Aviso: Coluna 'Ponderação' não encontrada no arquivo {arquivo}")
                 # Se não existir, cria a coluna
                 df_original['Ponderação'] = None
             
@@ -103,7 +99,7 @@ def tratativa_criticidade_api(output_dir, competencia):
                 return False
             
             with temp_container.container():
-                st.info(f"🔄 Fazendo correspondência entre dados...")
+                st.info(f"🔄 Fazendo correspondência entre arquivos...")
             
             # Faz o merge (VLOOKUP) usando Centro de Custo como chave
             df_atualizado = df_original.merge(
@@ -125,55 +121,48 @@ def tratativa_criticidade_api(output_dir, competencia):
             # Remove a coluna auxiliar do merge
             df_final = df_atualizado.drop(columns=['Nova Ponderação'])
             
-            # ========================================================================
-            # ATUALIZA A MEMÓRIA PRIMEIRO
-            # ========================================================================
+            # ✅ ATUALIZA A MEMÓRIA PRIMEIRO
             with temp_container.container():
-                st.info(f"🔄 Atualizando dados na memória...")
+                st.info(f"🔄 Atualizando session_state...")
             
-            st.session_state['formularios_data'][nome_formulario] = df_final.copy()
+            st.session_state['formularios_data'][arquivo] = df_final.copy()
             
-            # ========================================================================
-            # SALVA NO DISCO DEPOIS (para backup)
-            # ========================================================================
+            # ✅ SALVA NO DISCO DEPOIS (para backup)
             with temp_container.container():
                 st.info(f"💾 Salvando arquivo no disco...")
             
-            # Define o nome do arquivo para salvar
-            # Se o nome já contém a competência, usa direto; senão adiciona
-            if competencia.replace("/", "-").replace(" ", "_") in nome_formulario:
-                nome_arquivo = f"{nome_formulario}.csv"
+            # Cria o nome do arquivo para salvar
+            competencia_normalizada = competencia.replace("/", "-").replace(" ", "_")
+            
+            # Se já tem a competência no nome, não adiciona de novo
+            if competencia_normalizada in arquivo:
+                nome_arquivo = f"{arquivo}.csv"
             else:
-                nome_arquivo = f"{nome_formulario}_{competencia}.csv".replace("/", "-").replace(" ", "_")
+                nome_arquivo = f"{arquivo}_{competencia_normalizada}.csv"
             
             caminho_arquivo = os.path.join(output_dir, nome_arquivo)
             
             # Salva o arquivo atualizado
             df_final.to_csv(caminho_arquivo, index=False, sep=';', encoding='utf-8-sig')
             
-            # Limpa mensagens temporárias
+            # Se chegou até aqui sem erro, limpa as mensagens temporárias
             temp_container.empty()
             
-            # Mensagem de sucesso
-            st.success(f"✅ {nome_formulario} processado com sucesso!")
+            st.success(f"✅ {arquivo} processado com sucesso!")
             st.info(f"📊 {registros_com_match} ponderações atualizadas")
             
             return True
         
         except KeyError as ke:
             temp_container.empty()
-            st.error(f"❌ Erro ao acessar dados de {nome_formulario}: {ke}")
-            st.error("Verifique se os dados foram carregados corretamente da API")
+            st.error(f"❌ Erro ao acessar {arquivo} na memória: {ke}")
             return False
             
         except Exception as e:
             temp_container.empty()
-            st.error(f"❌ Erro ao processar {nome_formulario}: {e}")
-            import traceback
-            st.error(traceback.format_exc())
+            st.error(f"❌ Erro ao processar arquivo {arquivo}: {e}")
             return False
     
-    # Mensagem final
-    temp_container.empty()
-    st.success(f"🎉 Tratativa de criticidade concluída para a competência {competencia}")
+    # Mensagem final apenas se tudo deu certo
+    st.success(f"🎉 Processamento concluído com sucesso para a competência {competencia}")
     return True
