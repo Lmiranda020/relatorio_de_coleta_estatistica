@@ -735,27 +735,12 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                 envio_habilitado = consolidar_habilitado and st.session_state['consolidar']
 
                 # Adicione esta função no seu arquivo principal (antes da consolidação)
-                def recarregar_arquivos_csv_atualizados(output_dir, competencia, formularios_para_unidade):
+                def recarregar_dados_da_memoria():
                     """
-                    Recarrega os arquivos CSV do disco para garantir dados atualizados
+                    Retorna os dados dos formulários que já estão na memória (session_state)
+                    NÃO busca arquivos do disco - usa apenas o que já foi salvo na sessão
                     """
-                    dados_recarregados = {}
-                    
-                    for nome_form in formularios_para_unidade:
-                        arquivo_csv = os.path.join(
-                            output_dir, 
-                            f"{nome_form}_{competencia}.csv".replace("/", "-").replace(" ", "_")
-                        )
-                        
-                        if os.path.exists(arquivo_csv):
-                            try:
-                                df = pd.read_csv(arquivo_csv, sep=';', encoding='utf-8-sig')
-                                dados_recarregados[nome_form] = df
-                                # st.info(f"✅ Recarregado: {nome_form}")
-                            except Exception as e:
-                                st.warning(f"⚠️ Erro ao recarregar {nome_form}: {e}")
-                    
-                    return dados_recarregados
+                    return st.session_state.get('formularios_data', {}).copy()
 
                 def validar_consolidado_para_envio():
                     """
@@ -764,11 +749,7 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                     """
                     # dados_formularios = st.session_state.get('formularios_data', {})
                     # st.info("🔄 Recarregando arquivos CSV atualizados do disco...")
-                    dados_formularios = recarregar_arquivos_csv_atualizados(
-                        OUTPUT_DIR, 
-                        competencia_normalizada, 
-                        formularios_para_unidade
-                    )
+                    dados_formularios = recarregar_dados_da_memoria()
 
                     # Atualiza o session_state com os dados recarregados
                     st.session_state['formularios_data'].update(dados_formularios)
