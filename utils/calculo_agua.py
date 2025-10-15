@@ -714,12 +714,215 @@ def salvar_arquivo_agua_final(df_agua_final, output_dir, competencia, unidade):
         return None
 
 
+# def realizar_calculo_agua_consolidado(output_dir, competencia, unidade, caminho_base_agua):
+#     """
+#     Função principal que realiza o cálculo de consumo de água com dados consolidados
+#     """
+    
+#     # Inicializa o resultado
+#     resultado = {
+#         'sucesso': False,
+#         'erros': [],
+#         'dados_calculo': {},
+#         'dataframe': pd.DataFrame()
+#     }
+    
+
+#     try:
+#         st.info("🔍 Buscando arquivos de colaboradores...") #mostra a mensagem de buscanso as bases
+        
+#         # 1. Buscar arquivos de colaboradores
+#         arquivos_colaboradores = buscar_arquivos_colaboradores(output_dir) #bisca as bases
+#         #arquivos colaboradoes me traz uma lista com dicionários de cada arquivo que ele encontrou
+        
+#         #s não encontrou nada, dá um erro e retorna um dataframe vazio para onde a função foi chamada
+#         if not arquivos_colaboradores:
+#             resultado['erros'].append("Nenhum arquivo de colaboradores encontrado")
+#             st.error("❌ Nenhum arquivo de colaboradores encontrado")
+#             return resultado
+#             # return pd.DataFrame()   # dataframe vazio
+        
+#         #mas se retornou algo, ou seja, não cai no if not. Mostra a mensagem de sucesso
+#         st.success(f"Encontrados {len(arquivos_colaboradores)} arquivos de colaboradores")
+        
+#         # 2. Consolidar funcionários por centro de custo
+#         st.info("🔄 Consolidando funcionários por centro de custo...") #mostra a mensagem que está iniciado a cololidação dos arquivos de total de funcionários
+#         df_consolidado = consolidar_funcionarios_por_centro_custo(arquivos_colaboradores, competencia)
+        
+#         if df_consolidado is None or df_consolidado.empty:
+#             resultado['erros'].append("Falha na consolidação dos dados de funcionários")
+#             st.error("❌ Falha na consolidação dos dados de funcionários")
+#             return resultado
+#             # return pd.DataFrame()   # dataframe vazio
+        
+#         total_colaboradores = df_consolidado['Quantidade'].sum() #soma o total de colaboradores
+     
+#         # 3. Salvar arquivo consolidado
+#         arquivo_consolidado = salvar_arquivo_consolidado(df_consolidado, output_dir, competencia, unidade)
+#         #ele retorna o caminho do arquivo, que é o diretorio mais o nome do arquivo, caso de algum erro no momento de salvar ele retorna none
+        
+#         if arquivo_consolidado is None: # se for none
+#             resultado['erros'].append("Falha ao salvar arquivo consolidado")
+#             st.error("❌ Falha ao salvar arquivo consolidado") #monstra  mensagem de erro e retorna um dataframe vazio para onde a função foi chamanda
+#             return resultado
+#             # return pd.DataFrame()   # dataframe vazio
+        
+#         # 4. Obter dias do mês
+#         dias_mes = obter_dias_do_mes(competencia) # função para saber quantidade de dias que possui a compentencia escolhida
+#         #retorna a quantidade de dias, que possui para a competencia escolhida
+
+#         # 5. Carregar base de consumo de água
+#         df_base = carregar_base_consumo_agua(caminho_base_agua) #aqui eu passo o diretorio com o arquivo de agua
+#         # retorno o dataframe, na função apenas leio o arquivo e removo espaços nas colunas.
+
+#         #se a unidade estiver nessa lista não precisa fazer o calculo de dias uteis, pois elas funcionam 24h
+#         unidades_sem_dias_uteis = ["AMA 24H CAPAO REDONDO", "AMA PQ NOVO SANTO AMARO", "HOSPITAL DIA M BOI MIRIM II", "HOSPITAL MOYSES DEUTSCH MBOI MIRIM", "PA JD MACEDONIA ",
+#                                    "UPA JD ANGELA", "UPA VERA CRUZ", "PRONTO SOCORRO ARNALDO DE FIGUEIREDO FREITAS", "HOSPITAL GERAL DE ITAPEVI", "HOSPITAL MUNICIPAL EVANDRO FREIRE",
+#                                     "HOSPITAL ESTADUAL DE FRANCO DA ROCHA", "HOSPITAL E MATERNIDADE DE SÃO ROQUE", "HOSPITAL E MATERNIDADE MARISKA RIBEIRO", "HOSPITAL DIA CAMPO LIMPO",
+#                                       "HOSPITAL DIA M BOI MIRIM I"  ] # ou seja todas as unidades fazem o calculo de todos os dias do mês
+#         if unidade not in unidades_sem_dias_uteis: # se a unidade não estiver na lista, ou seja, ela não funciona 24h, faz o calculo de dias úteis
+#             dias_mes = apenas_dias_uteis(competencia, dias_mes) #executa o calculo de dias uteis e retorna a mesma variavel com o valor atualizado
+        
+
+#         if df_base is None: # se a base de calculo da agua for vazia
+#             resultado['erros'].append("Erro ao carregar base de consumo de água")
+#             st.error("❌ Erro ao carregar base de consumo de água") #mostra a mensagem de erro
+#             return resultado
+#             # return pd.DataFrame()   # e retorna um dataframe vazio para onde a função foi chamanda
+            
+        
+#         # 6. Obter dados da unidade
+#         dados_unidade = obter_dados_unidade_com_dias(df_base, unidade, dias_mes)
+
+#         #retorna um dicionário com as as colunas
+#         #   'UNIDADE': {0: 'Hospital A', 1: 'Hospital A'},
+#         #   'PONDERAÇÃO': {0: 'Qtde. Colaborado-res Próprios e Terceiros', 1: 'Qtde. Volumes Esterilizados (sem ponderação)'},
+#         #   'DESCRIÇÃO': {0: 'Litros por dia, por colaborador', 1: 'Litros por volume esterilizado'},
+#         #   'PONDERAÇÃO FORMS': {0: 'TOTAL_COLABORADORESs', 1: '%_Atuação_CME'},
+#         #   'VALOR': {0: 100, 1: 200}, #valor mutiplicado pela quantidade de dias
+#         #   'VALOR_ORIGINAL': {0: 100, 1: 200}, #valor original da planilha
+#         #   'DIAS_APLICADOS': {0: 30, 1: 30}
+        
+#         if dados_unidade is None: #se retornar none essa base
+#             resultado['erros'].append(f"Dados da unidade '{unidade}' não encontrados")
+#             st.error(f"❌ Dados da unidade '{unidade}' não encontrados") #mostra mensagem de erro
+#             return resultado
+#             # return pd.DataFrame()   # e retorna um dataframe vazio para onde a função foi chamanda
+        
+#         df_consolidado_multiplicado = None
+#         arquivo_cme_multiplcado = None
+#         arquivo_producao_multiplcado = None
+#         arquivo_area_multiplcado = None
+
+#         if df_consolidado is not None and not df_consolidado.empty:
+#             df_consolidado_multiplicado = multiplicacao_das_bases(df_consolidado, dados_unidade)
+#             st.info("✅ Arquivo colaboradores encontrado e processado")
+
+#             with st.expander("📊 Ver todos os dados", expanded=False):
+#                  st.dataframe(
+#                      df_consolidado_multiplicado, 
+#                      use_container_width=True, 
+#                      hide_index=True
+#                  )
+#         else:
+#             df_consolidado = None
+#             st.warning("⚠️ Arquivo colaboradores não encontrado - será ignorado no cálculo")
+
+#         arquivo_cme = buscar_arquivos_cme(output_dir)
+#         #retorna a primeir base que ele encontrar a palavra cme, já em formatao de dataframe
+
+#         if arquivo_cme is not None and not arquivo_cme.empty:
+#             arquivo_cme_multiplcado = multiplicacao_das_bases(arquivo_cme, dados_unidade)
+#             st.info("✅ Arquivo CME encontrado e processado")
+#         else:
+#             arquivo_cme = None
+#             st.warning("⚠️ Arquivo CME não encontrado - será ignorado no cálculo")
+
+
+#         arquivo_producao = buscar_arquivos_producao(output_dir)
+#         #retorna a primeir bae qu ele encontrar a palavra cme, já em formatao de dataframe
+
+#         if arquivo_producao is not None and not arquivo_producao.empty:
+#             arquivo_producao_multiplcado = multiplicacao_das_bases(arquivo_producao, dados_unidade)
+#             st.info("✅ Arquivo Produção encontrado e processado")
+#         else:
+#             arquivo_producao = None
+#             st.warning("⚠️ Arquivo Produção não encontrado - será ignorado no cálculo")
+
+#         arquivo_area = buscar_arquivos_area(output_dir)
+#         #retorna a primeir bae qu ele encontrar a palavra cme, já em formatao de dataframe
+
+#         if arquivo_area is not None and not arquivo_area.empty:
+#             arquivo_area_multiplcado = multiplicacao_das_bases(arquivo_area, dados_unidade)
+#             st.info("✅ Arquivo Área encontrado e processado")
+#         else:
+#             arquivo_area = None
+#             st.warning("⚠️ Arquivo Área não encontrado - será ignorado no cálculo")
+
+#         # 7. Consolidar todos os arquivos em um único arquivo final de água
+#         st.info("🧮 Realizando cálculos de consumo de água...")
+        
+#         df_agua_final = consolidar_todos_arquivos_agua(
+#             df_consolidado_multiplicado, #arquivo total colaboradores
+#             arquivo_cme_multiplcado, #arquivo cme
+#             arquivo_producao_multiplcado, #arquivo produção
+#             arquivo_area_multiplcado #arquivo de area
+#         )
+        
+#         if df_agua_final is None or df_agua_final.empty:
+#             st.error("❌ Falha na consolidação final dos dados de água")
+#             resultado['erros'].append("...")
+#             return resultado           
+#             # return pd.DataFrame()
+        
+#         resultado['sucesso'] = True
+
+#         # 9. Salvar arquivo final de água
+#         arquivo_agua_final = salvar_arquivo_agua_final(df_agua_final, output_dir, competencia, unidade)
+        
+#         if arquivo_agua_final is None:
+#             st.error("❌ Falha ao salvar arquivo final de água")
+#             resultado['erros'].append("Falha ao salvar arquivo final de água")
+#             return resultado
+#             # return pd.DataFrame()
+
+#         # 10. Preencher dados do resultado
+#         resultado['sucesso'] = True
+#         resultado['dataframe'] = df_agua_final
+#         resultado['dados_calculo'] = {
+#             'Consumo_Total_Litros': df_agua_final['Quantidade'].sum(),
+#             'Total_Colaboradores': total_colaboradores,
+#             'Centros_Custo_Unicos': len(df_agua_final),
+#             'Competência': competencia,
+#             'Unidade': unidade,
+#             'Dias_Processados': dias_mes,
+#             'Arquivo_Salvo': os.path.basename(arquivo_agua_final)
+#         }
+        
+#         # 10. Retornar o DataFrame final
+#         st.success(f"🎉 Processo concluído! Arquivo final: {os.path.basename(arquivo_agua_final)}")
+#         if resultado['sucesso']:
+#             # Chama a função de exibição diretamente aqui
+#             exibir_resultado_calculo_consolidado(resultado['dataframe'])
+            
+#             # Marca no session_state que o cálculo foi realizado
+#             st.session_state['calculo_agua_realizado'] = True
+            
+#             # Força o rerun para limpar as mensagens
+#             st.rerun()
+#         return resultado
+        
+#     except Exception as e:
+#         resultado['erros'].append(f"Erro geral no processo: {str(e)}")
+#         st.error(f"Erro geral no processo de cálculo de água: {str(e)}")
+#         return resultado
+#         # return pd.DataFrame()  # dataframe vazio
+
 def realizar_calculo_agua_consolidado(output_dir, competencia, unidade, caminho_base_agua):
     """
-    Função principal que realiza o cálculo de consumo de água com dados consolidados
+    VERSÃO ATUALIZADA: Usa dados do session_state ao invés de buscar arquivos
     """
     
-    # Inicializa o resultado
     resultado = {
         'sucesso': False,
         'erros': [],
@@ -727,166 +930,158 @@ def realizar_calculo_agua_consolidado(output_dir, competencia, unidade, caminho_
         'dataframe': pd.DataFrame()
     }
     
-
     try:
-        st.info("🔍 Buscando arquivos de colaboradores...") #mostra a mensagem de buscanso as bases
+        st.info("🔍 Buscando dados de colaboradores na memória...")
         
-        # 1. Buscar arquivos de colaboradores
-        arquivos_colaboradores = buscar_arquivos_colaboradores(output_dir) #bisca as bases
-        #arquivos colaboradoes me traz uma lista com dicionários de cada arquivo que ele encontrou
+        # 1. BUSCAR NO SESSION_STATE ao invés do disco
+        palavras_chave = ['pessoal', 'enfermagem', 'colaboradores', 'terceiros']
+        formularios_data = st.session_state.get('formularios_data', {})
         
-        #s não encontrou nada, dá um erro e retorna um dataframe vazio para onde a função foi chamada
-        if not arquivos_colaboradores:
-            resultado['erros'].append("Nenhum arquivo de colaboradores encontrado")
-            st.error("❌ Nenhum arquivo de colaboradores encontrado")
+        if not formularios_data:
+            resultado['erros'].append("Nenhum formulário foi salvo ainda")
+            st.error("❌ Nenhum formulário salvo na memória")
             return resultado
-            # return pd.DataFrame()   # dataframe vazio
         
-        #mas se retornou algo, ou seja, não cai no if not. Mostra a mensagem de sucesso
-        st.success(f"Encontrados {len(arquivos_colaboradores)} arquivos de colaboradores")
-        
-        # 2. Consolidar funcionários por centro de custo
-        st.info("🔄 Consolidando funcionários por centro de custo...") #mostra a mensagem que está iniciado a cololidação dos arquivos de total de funcionários
-        df_consolidado = consolidar_funcionarios_por_centro_custo(arquivos_colaboradores, competencia)
-        
-        if df_consolidado is None or df_consolidado.empty:
-            resultado['erros'].append("Falha na consolidação dos dados de funcionários")
-            st.error("❌ Falha na consolidação dos dados de funcionários")
-            return resultado
-            # return pd.DataFrame()   # dataframe vazio
-        
-        total_colaboradores = df_consolidado['Quantidade'].sum() #soma o total de colaboradores
-     
-        # 3. Salvar arquivo consolidado
-        arquivo_consolidado = salvar_arquivo_consolidado(df_consolidado, output_dir, competencia, unidade)
-        #ele retorna o caminho do arquivo, que é o diretorio mais o nome do arquivo, caso de algum erro no momento de salvar ele retorna none
-        
-        if arquivo_consolidado is None: # se for none
-            resultado['erros'].append("Falha ao salvar arquivo consolidado")
-            st.error("❌ Falha ao salvar arquivo consolidado") #monstra  mensagem de erro e retorna um dataframe vazio para onde a função foi chamanda
-            return resultado
-            # return pd.DataFrame()   # dataframe vazio
-        
-        # 4. Obter dias do mês
-        dias_mes = obter_dias_do_mes(competencia) # função para saber quantidade de dias que possui a compentencia escolhida
-        #retorna a quantidade de dias, que possui para a competencia escolhida
-
-        # 5. Carregar base de consumo de água
-        df_base = carregar_base_consumo_agua(caminho_base_agua) #aqui eu passo o diretorio com o arquivo de agua
-        # retorno o dataframe, na função apenas leio o arquivo e removo espaços nas colunas.
-
-        #se a unidade estiver nessa lista não precisa fazer o calculo de dias uteis, pois elas funcionam 24h
-        unidades_sem_dias_uteis = ["AMA 24H CAPAO REDONDO", "AMA PQ NOVO SANTO AMARO", "HOSPITAL DIA M BOI MIRIM II", "HOSPITAL MOYSES DEUTSCH MBOI MIRIM", "PA JD MACEDONIA ",
-                                   "UPA JD ANGELA", "UPA VERA CRUZ", "PRONTO SOCORRO ARNALDO DE FIGUEIREDO FREITAS", "HOSPITAL GERAL DE ITAPEVI", "HOSPITAL MUNICIPAL EVANDRO FREIRE",
-                                    "HOSPITAL ESTADUAL DE FRANCO DA ROCHA", "HOSPITAL E MATERNIDADE DE SÃO ROQUE", "HOSPITAL E MATERNIDADE MARISKA RIBEIRO", "HOSPITAL DIA CAMPO LIMPO",
-                                      "HOSPITAL DIA M BOI MIRIM I"  ] # ou seja todas as unidades fazem o calculo de todos os dias do mês
-        if unidade not in unidades_sem_dias_uteis: # se a unidade não estiver na lista, ou seja, ela não funciona 24h, faz o calculo de dias úteis
-            dias_mes = apenas_dias_uteis(competencia, dias_mes) #executa o calculo de dias uteis e retorna a mesma variavel com o valor atualizado
-        
-
-        if df_base is None: # se a base de calculo da agua for vazia
-            resultado['erros'].append("Erro ao carregar base de consumo de água")
-            st.error("❌ Erro ao carregar base de consumo de água") #mostra a mensagem de erro
-            return resultado
-            # return pd.DataFrame()   # e retorna um dataframe vazio para onde a função foi chamanda
+        # Busca formulários de colaboradores
+        dfs_colaboradores = []
+        for nome_form, df in formularios_data.items():
+            nome_lower = nome_form.lower()
             
+            if 'total' in nome_lower:
+                continue
+            
+            for palavra in palavras_chave:
+                if palavra in nome_lower:
+                    dfs_colaboradores.append({'nome': nome_form, 'dataframe': df.copy()})
+                    st.success(f"✅ Encontrado: {nome_form}")
+                    break
         
-        # 6. Obter dados da unidade
-        dados_unidade = obter_dados_unidade_com_dias(df_base, unidade, dias_mes)
-
-        #retorna um dicionário com as as colunas
-        #   'UNIDADE': {0: 'Hospital A', 1: 'Hospital A'},
-        #   'PONDERAÇÃO': {0: 'Qtde. Colaborado-res Próprios e Terceiros', 1: 'Qtde. Volumes Esterilizados (sem ponderação)'},
-        #   'DESCRIÇÃO': {0: 'Litros por dia, por colaborador', 1: 'Litros por volume esterilizado'},
-        #   'PONDERAÇÃO FORMS': {0: 'TOTAL_COLABORADORESs', 1: '%_Atuação_CME'},
-        #   'VALOR': {0: 100, 1: 200}, #valor mutiplicado pela quantidade de dias
-        #   'VALOR_ORIGINAL': {0: 100, 1: 200}, #valor original da planilha
-        #   'DIAS_APLICADOS': {0: 30, 1: 30}
-        
-        if dados_unidade is None: #se retornar none essa base
-            resultado['erros'].append(f"Dados da unidade '{unidade}' não encontrados")
-            st.error(f"❌ Dados da unidade '{unidade}' não encontrados") #mostra mensagem de erro
+        if not dfs_colaboradores:
+            resultado['erros'].append("Nenhum formulário de colaboradores encontrado")
+            st.error("❌ Nenhum formulário de colaboradores encontrado")
             return resultado
-            # return pd.DataFrame()   # e retorna um dataframe vazio para onde a função foi chamanda
         
-        df_consolidado_multiplicado = None
-        arquivo_cme_multiplcado = None
-        arquivo_producao_multiplcado = None
-        arquivo_area_multiplcado = None
-
-        if df_consolidado is not None and not df_consolidado.empty:
-            df_consolidado_multiplicado = multiplicacao_das_bases(df_consolidado, dados_unidade)
-            st.info("✅ Arquivo colaboradores encontrado e processado")
-
-            with st.expander("📊 Ver todos os dados", expanded=False):
-                 st.dataframe(
-                     df_consolidado_multiplicado, 
-                     use_container_width=True, 
-                     hide_index=True
-                 )
-        else:
-            df_consolidado = None
-            st.warning("⚠️ Arquivo colaboradores não encontrado - será ignorado no cálculo")
-
-        arquivo_cme = buscar_arquivos_cme(output_dir)
-        #retorna a primeir base que ele encontrar a palavra cme, já em formatao de dataframe
-
-        if arquivo_cme is not None and not arquivo_cme.empty:
-            arquivo_cme_multiplcado = multiplicacao_das_bases(arquivo_cme, dados_unidade)
-            st.info("✅ Arquivo CME encontrado e processado")
-        else:
-            arquivo_cme = None
-            st.warning("⚠️ Arquivo CME não encontrado - será ignorado no cálculo")
-
-
-        arquivo_producao = buscar_arquivos_producao(output_dir)
-        #retorna a primeir bae qu ele encontrar a palavra cme, já em formatao de dataframe
-
-        if arquivo_producao is not None and not arquivo_producao.empty:
-            arquivo_producao_multiplcado = multiplicacao_das_bases(arquivo_producao, dados_unidade)
-            st.info("✅ Arquivo Produção encontrado e processado")
-        else:
-            arquivo_producao = None
-            st.warning("⚠️ Arquivo Produção não encontrado - será ignorado no cálculo")
-
-        arquivo_area = buscar_arquivos_area(output_dir)
-        #retorna a primeir bae qu ele encontrar a palavra cme, já em formatao de dataframe
-
-        if arquivo_area is not None and not arquivo_area.empty:
-            arquivo_area_multiplcado = multiplicacao_das_bases(arquivo_area, dados_unidade)
-            st.info("✅ Arquivo Área encontrado e processado")
-        else:
-            arquivo_area = None
-            st.warning("⚠️ Arquivo Área não encontrado - será ignorado no cálculo")
-
-        # 7. Consolidar todos os arquivos em um único arquivo final de água
-        st.info("🧮 Realizando cálculos de consumo de água...")
+        # 2. CONSOLIDAR (mesmo código que já existe, mas usando dfs_colaboradores)
+        todos_dados = []
+        for item in dfs_colaboradores:
+            df = item['dataframe'].copy()
+            df.columns = df.columns.str.strip()
+            
+            if 'Quantidade' not in df.columns:
+                continue
+            
+            df['Quantidade'] = pd.to_numeric(
+                df['Quantidade'].astype(str).str.replace(',', '.'), 
+                errors='coerce'
+            ).fillna(0)
+            
+            df = df[df['Quantidade'] > 0]
+            
+            if df.empty:
+                continue
+            
+            if 'Centro de Custo' not in df.columns:
+                df['Centro de Custo'] = 'Não Informado'
+            else:
+                df['Centro de Custo'] = df['Centro de Custo'].fillna('Não Informado')
+            
+            if 'Competência' not in df.columns:
+                df['Competência'] = competencia
+            
+            df_selecionado = df[['Competência', 'Centro de Custo', 'Quantidade']]
+            todos_dados.append(df_selecionado)
         
+        if not todos_dados:
+            resultado['erros'].append("Nenhum dado válido processado")
+            return resultado
+        
+        df_todos = pd.concat(todos_dados, ignore_index=True)
+        
+        df_consolidado = df_todos.groupby('Centro de Custo').agg({
+            'Quantidade': 'sum',
+            'Competência': 'first'
+        }).reset_index()
+        
+        df_consolidado['Ponderação'] = 'Total Colaboradores'
+        df_consolidado = df_consolidado[['Competência', 'Centro de Custo', 'Ponderação', 'Quantidade']]
+        
+        total_colaboradores = df_consolidado['Quantidade'].sum()
+        st.success(f"✅ {len(df_consolidado)} centros de custo, {total_colaboradores:.0f} colaboradores")
+        
+        # 3. SALVAR (backup)
+        nome_arquivo = f"total_colaboradores_{competencia}.csv".replace("/", "-").replace(" ", "_")
+        caminho = os.path.join(output_dir, nome_arquivo)
+        df_consolidado.to_csv(caminho, index=False, encoding='utf-8-sig', sep=';')
+        
+        # 4. RESTO DO CÓDIGO (dias, base água, etc.) - MANTÉM IGUAL
+        dias_mes = obter_dias_do_mes(competencia)
+        df_base = carregar_base_consumo_agua(caminho_base_agua)
+        
+        unidades_24h = ["AMA 24H CAPAO REDONDO", "HOSPITAL GERAL DE ITAPEVI", ...]  # sua lista
+        if unidade not in unidades_24h:
+            dias_mes = apenas_dias_uteis(competencia, dias_mes)
+        
+        dados_unidade = obter_dados_unidade_com_dias(df_base, unidade, dias_mes)
+        
+        if dados_unidade is None:
+            resultado['erros'].append("Dados da unidade não encontrados")
+            return resultado
+        
+        # 5. MULTIPLICAR colaboradores
+        df_consolidado_multiplicado = multiplicacao_das_bases(df_consolidado, dados_unidade)
+        
+        # 6. BUSCAR CME, PRODUÇÃO, ÁREA NA MEMÓRIA (ao invés do disco)
+        arquivo_cme_mult = None
+        for nome_form, df in formularios_data.items():
+            if 'cme' in nome_form.lower() and 'atuação' in nome_form.lower():
+                df_cme = df.copy()
+                if "Competencia" in df_cme.columns:
+                    df_cme = df_cme.rename(columns={"Competencia": "Competência"})
+                arquivo_cme_mult = multiplicacao_das_bases(df_cme, dados_unidade)
+                st.info("✅ CME encontrado")
+                break
+        
+        arquivo_prod_mult = None
+        for nome_form, df in formularios_data.items():
+            if 'produção' in nome_form.lower() or 'producao' in nome_form.lower():
+                df_prod = df.copy()
+                df_prod["Ponderação"] = "Produção"
+                if "Competencia" in df_prod.columns:
+                    df_prod = df_prod.rename(columns={"Competencia": "Competência"})
+                arquivo_prod_mult = multiplicacao_das_bases(df_prod, dados_unidade)
+                st.info("✅ Produção encontrada")
+                break
+        
+        arquivo_area_mult = None
+        for nome_form, df in formularios_data.items():
+            if ('área' in nome_form.lower() or 'area' in nome_form.lower()) and 'criticidade' not in nome_form.lower():
+                df_area = df.copy()
+                if "Competencia" in df_area.columns:
+                    df_area = df_area.rename(columns={"Competencia": "Competência"})
+                arquivo_area_mult = multiplicacao_das_bases(df_area, dados_unidade)
+                st.info("✅ Área encontrada")
+                break
+        
+        # 7. CONSOLIDAR ÁGUA (mantém igual)
         df_agua_final = consolidar_todos_arquivos_agua(
-            df_consolidado_multiplicado, #arquivo total colaboradores
-            arquivo_cme_multiplcado, #arquivo cme
-            arquivo_producao_multiplcado, #arquivo produção
-            arquivo_area_multiplcado #arquivo de area
+            df_consolidado_multiplicado,
+            arquivo_cme_mult,
+            arquivo_prod_mult,
+            arquivo_area_mult
         )
         
         if df_agua_final is None or df_agua_final.empty:
-            st.error("❌ Falha na consolidação final dos dados de água")
-            resultado['erros'].append("...")
-            return resultado           
-            # return pd.DataFrame()
-        
-        resultado['sucesso'] = True
-
-        # 9. Salvar arquivo final de água
-        arquivo_agua_final = salvar_arquivo_agua_final(df_agua_final, output_dir, competencia, unidade)
-        
-        if arquivo_agua_final is None:
-            st.error("❌ Falha ao salvar arquivo final de água")
-            resultado['erros'].append("Falha ao salvar arquivo final de água")
+            resultado['erros'].append("Falha na consolidação final")
             return resultado
-            # return pd.DataFrame()
-
-        # 10. Preencher dados do resultado
+        
+        # 8. SALVAR ÁGUA FINAL
+        arquivo_final = salvar_arquivo_agua_final(df_agua_final, output_dir, competencia, unidade)
+        
+        if arquivo_final is None:
+            resultado['erros'].append("Falha ao salvar")
+            return resultado
+        
+        # 9. RESULTADO
         resultado['sucesso'] = True
         resultado['dataframe'] = df_agua_final
         resultado['dados_calculo'] = {
@@ -896,28 +1091,21 @@ def realizar_calculo_agua_consolidado(output_dir, competencia, unidade, caminho_
             'Competência': competencia,
             'Unidade': unidade,
             'Dias_Processados': dias_mes,
-            'Arquivo_Salvo': os.path.basename(arquivo_agua_final)
+            'Arquivo_Salvo': os.path.basename(arquivo_final)
         }
         
-        # 10. Retornar o DataFrame final
-        st.success(f"🎉 Processo concluído! Arquivo final: {os.path.basename(arquivo_agua_final)}")
-        if resultado['sucesso']:
-            # Chama a função de exibição diretamente aqui
-            exibir_resultado_calculo_consolidado(resultado['dataframe'])
-            
-            # Marca no session_state que o cálculo foi realizado
-            st.session_state['calculo_agua_realizado'] = True
-            
-            # Força o rerun para limpar as mensagens
-            st.rerun()
+        st.success(f"🎉 Concluído! {os.path.basename(arquivo_final)}")
+        exibir_resultado_calculo_consolidado(resultado['dataframe'])
+        st.session_state['calculo_agua_realizado'] = True
+        st.rerun()
+        
         return resultado
         
     except Exception as e:
-        resultado['erros'].append(f"Erro geral no processo: {str(e)}")
-        st.error(f"Erro geral no processo de cálculo de água: {str(e)}")
+        resultado['erros'].append(f"Erro: {str(e)}")
+        st.error(f"❌ Erro: {str(e)}")
+        st.exception(e)
         return resultado
-        # return pd.DataFrame()  # dataframe vazio
-
 
 def exibir_resultado_calculo_consolidado(df_resultado):
     """
