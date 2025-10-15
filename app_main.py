@@ -46,6 +46,10 @@ except ImportError as e:
     st.warning(f"Módulos de API de centro de custo não encontrados: {e}")
     API_CENTRO_CUSTO_DISPONIVEL = False
 from components.modal_feedback_pos_envio import modal_feedback_sucesso
+from utils.file_utils import criar_zip_formularios, get_tamanho_legivel
+import zipfile
+from io import BytesIO
+import tempfile
 
 # === FUNÇÃO PARA ARMAZENAR ID DA UNIDADE QUANDO PROCESSAR DADOS PERMANENTES ===
 def processar_dados_permanentes_com_id():
@@ -146,9 +150,11 @@ def mostrar_configuracoes_logado(): #Cria uma função para mostrar as configura
     # perceba que a unidade eu não faço nada so retorno para onde chamar a afunção, a unidade está na memoria do stremelit
 
 # Cria o diretório no desktop do usuário
-desktop_path = get_desktop_path() # primeiro eu chamo a função que retorna o caminho do desktop do usuário e armazena na variavel desktop_path
-OUTPUT_DIR = os.path.join(desktop_path, "formularios_preenchidos") # aqui eu faço um join do caminho do desktop com o nome da pasta que eu quero criar, ou seja, "formularios_preenchidos" e armazena em uma falsa constante OUTPUT_DIR
+# desktop_path = get_desktop_path() # primeiro eu chamo a função que retorna o caminho do desktop do usuário e armazena na variavel desktop_path
+# OUTPUT_DIR = os.path.join(desktop_path, "formularios_preenchidos") # aqui eu faço um join do caminho do desktop com o nome da pasta que eu quero criar, ou seja, "formularios_preenchidos" e armazena em uma falsa constante OUTPUT_DIR
 
+# No Streamlit Cloud, usa pasta temporária
+OUTPUT_DIR = tempfile.mkdtemp(prefix="formularios_")
 
 if not st.session_state['usuario_logado']: # se não estiver logado, ou seja, se não existir a chave usuario_logado no session_state
 
@@ -183,16 +189,16 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
         # makedirs é uma função do módulo os que cria uma pasta
         # e o exist_ok=True significa que se a pasta já existir, não vai dar erro
         # OUTPUT_DIR é a variável que contém o caminho da pasta que eu quero criar, junto com o nome da pasta "formularios_preenchidos"
-        if not st.session_state["mensagem_pasta_exibida"]:
-            msg = st.success(f"✅ Pasta criada/encontrada em: {OUTPUT_DIR}")
-            # A mensagem de sucesso é exibida na interface do usuário, informando que a pasta foi criada
-            time.sleep(3)
-            # a mesangem de sucesso é exibida por 3 segundos
-            msg.empty()
-            # depois a mensagem é removida da interface do usuário
+        # if not st.session_state["mensagem_pasta_exibida"]:
+        #     msg = st.success(f"✅ Pasta criada/encontrada em: {OUTPUT_DIR}")
+        #     # A mensagem de sucesso é exibida na interface do usuário, informando que a pasta foi criada
+        #     time.sleep(3)
+        #     # a mesangem de sucesso é exibida por 3 segundos
+        #     msg.empty()
+        #     # depois a mensagem é removida da interface do usuário
 
-            # Marca que a mensagem já foi exibida
-            st.session_state["mensagem_pasta_exibida"] = True
+        #     # Marca que a mensagem já foi exibida
+        #     st.session_state["mensagem_pasta_exibida"] = True
     except Exception as e:
         st.error(f"❌ Erro ao criar pasta no desktop: {str(e)}")
         # se der erro ao criar a pasta, ele captura a exceção e mostra uma mensagem de erro
@@ -205,6 +211,9 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
     # Header do usuário logado
     mostrar_header_usuario() # monstra a parte inicial do sistema, ou seja, o cabeçalho com as informações do usuário logado e o botão de logout
     
+
+    st.info("💡 **Dica:** Após consolidar, você poderá baixar todos os formulários em formato ZIP.")
+
     # Cria 3 colunas: esquerda (logo CEJAM), centro (título), direita (logo SUS)
     col_esq, col_centro, col_dir = st.columns([1, 6, 1]) # 1 ,6, 1 significa que a coluna esquerda terá 1 parte, a do meio terá 6 partes e a da direita terá 1 parte, ou seja, a coluna do meio será maior que as outras duas
 
@@ -1670,7 +1679,7 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                         df_final.to_csv(arquivo_consolidado, index=False, encoding="utf-8-sig", sep=";")
                         
                         st.success("✅ Consolidação concluída com sucesso!")
-                        
+
                         # Mostra resumo
                         st.markdown("### 📈 Resumo da Consolidação")
                         
@@ -1692,11 +1701,84 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                         with st.expander("👀 Ver preview dos dados"):
                             st.dataframe(df_final.head(20))
                         
-                    
-                        
                     except Exception as consolidate_error:
                         st.error(f"❌ Erro ao salvar arquivo consolidado: {str(consolidate_error)}")
                         st.session_state['consolidar'] = False
+                    
+                    # === SEÇÃO DE DOWNLOAD PROFISSIONAL ===
+                    st.markdown("---")
+                    st.markdown("### 📥 Download dos Resultados")
+
+                    col_info, col_downloads = st.columns([2, 3])
+
+                    with col_info:
+                        st.info("""
+                        **📦 Pacote Completo (ZIP)**
+                        - Todos os formulários organizados
+                        - Arquivo consolidado
+                        - Dados permanentes da API
+                        - Cálculos realizados
+                        - Arquivo README com instruções
+                        
+                        **📄 Consolidado Individual**
+                        - Arquivo pronto para envio ao KPIH
+                        - Todos os dados em um único CSV
+                        """)
+
+                    with col_downloads:
+                        # Botão 1: Download do Consolidado
+                        st.markdown("#### 🎯 Arquivo Principal")
+                        
+                        try:
+                            with open(arquivo_consolidado, 'rb') as file:
+                                dados_consolidado = file.read()
+                                tamanho_consolidado = get_tamanho_legivel(len(dados_consolidado))
+                                
+                                st.download_button(
+                                    label=f"📄 Baixar Consolidado ({tamanho_consolidado})",
+                                    data=dados_consolidado,
+                                    file_name=os.path.basename(arquivo_consolidado),
+                                    mime="text/csv",
+                                    use_container_width=True,
+                                    help="Arquivo pronto para envio ao KPIH"
+                                )
+                        except Exception as e:
+                            st.error(f"Erro ao preparar consolidado: {e}")
+                        
+                        st.markdown("#### 📦 Pacote Completo")
+                        
+                        # Botão 2: Download do ZIP
+                        try:
+                            zip_buffer, qtd_arquivos = criar_zip_formularios(
+                                OUTPUT_DIR, 
+                                competencia_normalizada, 
+                                unidade
+                            )
+                            
+                            tamanho_zip = get_tamanho_legivel(len(zip_buffer.getvalue()))
+                            nome_zip = f"Relatorio_Coleta_{unidade}_{competencia_normalizada}.zip"
+                            
+                            st.download_button(
+                                label=f"📦 Baixar Tudo ({qtd_arquivos} arquivos • {tamanho_zip})",
+                                data=zip_buffer,
+                                file_name=nome_zip,
+                                mime="application/zip",
+                                use_container_width=True,
+                                type="primary",
+                                help="Backup completo com todos os formulários organizados"
+                            )
+                            
+                            st.success(f"✅ {qtd_arquivos} arquivos prontos para download")
+                            
+                        except Exception as e:
+                            st.error(f"❌ Erro ao criar pacote ZIP: {e}")
+                            st.info("💡 Você ainda pode baixar o consolidado acima")
+
+                    st.markdown("---")
+
+                    # Dica profissional
+                    st.info("💡 **Dica:** Baixe o pacote completo (ZIP) como backup. Use o consolidado para envio ao sistema.")
+
                 else:
                     st.warning("⚠️ Nenhum formulário foi salvo ainda.")
                     st.session_state['consolidar'] = False

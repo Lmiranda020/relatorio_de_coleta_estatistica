@@ -3,6 +3,87 @@ Funções para manipulação de arquivos e pastas
 """
 import os
 import streamlit as st
+import zipfile
+from io import BytesIO
+import os
+from datetime import datetime
+
+def criar_zip_formularios(output_dir, competencia, unidade):
+    """
+    Cria um arquivo ZIP com todos os formulários da competência.
+    Inclui metadata e organização profissional.
+    """
+    zip_buffer = BytesIO()
+    
+    try:
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            arquivos_adicionados = 0
+            
+            # Lista e organiza arquivos por tipo
+            arquivos_csv = sorted([f for f in os.listdir(output_dir) if f.endswith('.csv')])
+            
+            for arquivo in arquivos_csv:
+                caminho_completo = os.path.join(output_dir, arquivo)
+                
+                # Adiciona ao ZIP com path organizado
+                if 'CONSOLIDADO' in arquivo:
+                    zip_file.write(caminho_completo, f"00_CONSOLIDADO/{arquivo}")
+                elif 'API' in arquivo:
+                    zip_file.write(caminho_completo, f"01_DadosPermanentes/{arquivo}")
+                elif 'Agua' in arquivo or 'Água' in arquivo:
+                    zip_file.write(caminho_completo, f"02_Calculos/{arquivo}")
+                else:
+                    zip_file.write(caminho_completo, f"03_Formularios/{arquivo}")
+                
+                arquivos_adicionados += 1
+            
+            # Adiciona arquivo README.txt
+            readme_content = f"""
+╔══════════════════════════════════════════════════════════════╗
+║          RELATÓRIO DE COLETA - CEJAM                         ║
+╚══════════════════════════════════════════════════════════════╝
+
+📋 INFORMAÇÕES DO PACOTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Unidade: {unidade}
+- Competência: {competencia}
+- Data de geração: {datetime.now().strftime('%d/%m/%Y às %H:%M')}
+- Total de arquivos: {arquivos_adicionados}
+
+📁 ESTRUTURA DO PACOTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+00_CONSOLIDADO/     → Arquivo principal (use este para envio)
+01_DadosPermanentes/ → Dados importados da API
+02_Calculos/        → Cálculos automáticos (água, etc)
+03_Formularios/     → Formulários individuais preenchidos
+
+⚠️ IMPORTANTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- O arquivo CONSOLIDADO é o que deve ser enviado ao KPIH
+- Mantenha este ZIP como backup
+- Todos os arquivos usam separador ";" e encoding UTF-8
+
+═══════════════════════════════════════════════════════════════
+Sistema desenvolvido por: Equipe de Custos CEJAM
+Para suporte: custos@cejam.org.br
+═══════════════════════════════════════════════════════════════
+            """.strip()
+            
+            zip_file.writestr("LEIA-ME.txt", readme_content.encode('utf-8'))
+        
+        zip_buffer.seek(0)
+        return zip_buffer, arquivos_adicionados
+        
+    except Exception as e:
+        raise Exception(f"Erro ao criar ZIP: {str(e)}")
+
+
+def get_tamanho_legivel(tamanho_bytes):
+    """Converte bytes para formato legível (KB, MB)"""
+    for unidade in ['B', 'KB', 'MB', 'GB']:
+        if tamanho_bytes < 1024.0:
+            return f"{tamanho_bytes:.1f} {unidade}"
+        tamanho_bytes /= 1024.0
 
 # Função para obter o caminho do desktop do usuário
 def get_desktop_path():
