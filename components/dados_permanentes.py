@@ -358,7 +358,7 @@ def converter_dados_para_dataframe_sem_filtro_criticidade(dados_formulario, nome
 def salvar_dados_permanentes_individuais(dados_filtrados, competencia_selecionada, unidade, output_dir): #função para salvar os dados permanentes em arquivos individuais
     """
     Salva dados permanentes em arquivos individuais
-    """
+    """  
     arquivos_salvos = [] #crio uma lista vazia para guardar os nomes dos arquivos salvos
     
     try:
@@ -455,6 +455,7 @@ def processar_dados_permanentes_completo():
         formularios_permanentes.append(formularios_para_add)
         competencia_selecionada = st.session_state.get('competencia_usuario', '')
         unidade_usuario = st.session_state.get('unidade_usuario', '')
+        # aqui temos a parte do diretorio, será que está atualizado?
         output_dir = st.session_state.get('output_dir', 'formularios_preenchidos')
         
         if not all([formularios_permanentes, competencia_selecionada, unidade_usuario]): #se alguma dessas variaveis estiver vazia

@@ -65,7 +65,7 @@ def tratativa_criticidade_api(output_dir, competencia):
             st.info(f"⚙️ Processando arquivo: {arquivo}")
         
         try:
-            # ✅ Lê da MEMÓRIA (não do disco)
+            # arquivo da memoria
             df_original = formularios_data[arquivo].copy()
             
             with temp_container.container():
