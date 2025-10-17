@@ -1596,7 +1596,7 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                         ]
 
                         # === REGRA 1: Se vieram da API, ignorar os manuais ===
-                        formularios_a_ignorar = ["Produção", "Nº de Colaboradores (Médicos + Não Médicos)"]  # Sempre ignora Produção
+                        formularios_a_ignorar = ["Produção"]  # Sempre ignora Produção
 
                         if dados_criticidade_vieram_da_api:
                             st.info("🔄 Dados de criticidade vieram da API - usando versão tratada única")
@@ -1610,7 +1610,7 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
 
                         for nome, df in st.session_state['formularios_data'].items():
                             # Pula os formulários da lista de ignorados
-                            for nome in formularios_a_ignorar:
+                            if nome in formularios_a_ignorar:
                                 st.info(f"  ⏭️ Pulando: {nome}")
                                 continue
                             
