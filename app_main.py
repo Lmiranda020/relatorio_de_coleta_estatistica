@@ -1610,7 +1610,7 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
 
                         for nome, df in st.session_state['formularios_data'].items():
                             # Pula os formulários da lista de ignorados
-                            if nome in formularios_a_ignorar:
+                            formularios_manuais_pendentes nome in formularios_a_ignorar:
                                 st.info(f"  ⏭️ Pulando: {nome}")
                                 continue
                             
