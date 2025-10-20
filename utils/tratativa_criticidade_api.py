@@ -39,7 +39,7 @@ def tratativa_criticidade_api(output_dir, competencia):
         st.error(f"Erro ao carregar arquivo de de-para: {e}")
         return False
 
-    inicio_arquivo = "Area_Criticidade_API"
+    inicio_arquivo = "Area_Criticidade_API_"
     
     with temp_container.container():
         st.info("🔍 Procurando arquivos para processar...")
@@ -129,7 +129,12 @@ def tratativa_criticidade_api(output_dir, competencia):
         # Remove a coluna auxiliar do merge
         df_final = df_atualizado.drop(columns=['Nova Ponderação'])
         
-        # ✅ ATUALIZA O ARQUIVO PRINCIPAL NA MEMÓRIA
+        # 🔥 CRÍTICO: Remove a versão ANTIGA antes de salvar a nova
+        if 'Area_Criticidade_API' in st.session_state.get('formularios_data', {}):
+            st.info("🔄 Removendo versão desatualizada da memória...")
+            del st.session_state['formularios_data']['Area_Criticidade_API']
+        
+        # ✅ ATUALIZA O ARQUIVO PRINCIPAL NA MEMÓRIA (versão atualizada)
         st.session_state['formularios_data']['Area_Criticidade_API'] = df_final.copy()
         
         # ✅ SALVA O ARQUIVO PRINCIPAL NO DISCO
