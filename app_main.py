@@ -1528,28 +1528,28 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                 # PASSO 2: Executar tratativa de criticidade
                 resultado_tratativa_criticidade_api = tratativa_criticidade_api(OUTPUT_DIR, competencia_normalizada)
                 
-                if resultado_tratativa_criticidade_api:
-                    st.info("✅ Tratativa de criticidade concluída")
+                # if resultado_tratativa_criticidade_api:
+                #     st.info("✅ Tratativa de criticidade concluída")
 
-                    # PASSO 3: RECARREGAR APENAS A VERSÃO ATUALIZADA
-                    arquivo_criticidade = os.path.join(OUTPUT_DIR, f"Area_Criticidade_API_{competencia_normalizada}.csv")
+                #     # PASSO 3: RECARREGAR APENAS A VERSÃO ATUALIZADA
+                #     arquivo_criticidade = os.path.join(OUTPUT_DIR, f"Area_Criticidade_API_{competencia_normalizada}.csv")
 
-                    if os.path.exists(arquivo_criticidade):
-                        try:
-                            df_criticidade_atualizado = pd.read_csv(arquivo_criticidade, sep=';')
-                            # Valida que a ponderação foi realmente atualizada
-                            ponderacoes_preenchidas = df_criticidade_atualizado['Ponderação'].notna().sum()
+                #     if os.path.exists(arquivo_criticidade):
+                #         try:
+                #             df_criticidade_atualizado = pd.read_csv(arquivo_criticidade, sep=';')
+                #             # Valida que a ponderação foi realmente atualizada
+                #             ponderacoes_preenchidas = df_criticidade_atualizado['Ponderação'].notna().sum()
                             
-                            if ponderacoes_preenchidas > 0:
-                                # Adiciona APENAS a versão atualizada ao session_state
-                                st.session_state['formularios_data']['Area_Criticidade_API'] = df_criticidade_atualizado
-                            else:
-                                st.warning("⚠️ Arquivo de criticidade não possui ponderações atualizadas")
-                        except Exception as e:
-                            st.error(f"Erro ao recarregar dados de criticidade: {e}")
+                #             if ponderacoes_preenchidas > 0:
+                #                 # Adiciona APENAS a versão atualizada ao session_state
+                #                 st.session_state['formularios_data']['Area_Criticidade_API'] = df_criticidade_atualizado
+                #             else:
+                #                 st.warning("⚠️ Arquivo de criticidade não possui ponderações atualizadas")
+                #         except Exception as e:
+                #             st.error(f"Erro ao recarregar dados de criticidade: {e}")
 
-                    else:
-                        st.warning(f"⚠️ Arquivo de criticidade não encontrado: {arquivo_criticidade}")
+                #     else:
+                #         st.warning(f"⚠️ Arquivo de criticidade não encontrado: {arquivo_criticidade}")
 
                     
                 if st.session_state.get('consolidar', False) and resultado_tratativa_criticidade_api:
