@@ -1596,14 +1596,12 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                         ]
 
                         # === REGRA 1: Se vieram da API, ignorar os manuais ===
-                        formularios_a_ignorar = ["Produção"]  # Sempre ignora Produção
+                        formularios_a_ignorar = ["Produção", "Area_Criticidade_API"]  # Sempre ignora Produção e criticidade para usar os 3 filtrados
 
                         if dados_criticidade_vieram_da_api:
-                            st.info("🔄 Dados de criticidade vieram da API - usando versão tratada única")
-                            formularios_a_ignorar.extend(formularios_criticidade_manuais)
+                            st.info("🔄 Dados de criticidade vieram da API - usando as 3 versões filtradas")
                         else:
-                            st.info("✏️ Dados de criticidade preenchidos manualmente - consolidando os 3 formulários")
-                            formularios_a_ignorar.append('Area_Criticidade_API')  # Ignora a versão API se foi manual
+                            st.info("✏️ Dados de criticidade preenchidos manualmente - usando as 3 versões")
 
                         # === PROCESSAMENTO DOS FORMULÁRIOS ===
                         st.markdown("#### 📋 Processando formulários...")
