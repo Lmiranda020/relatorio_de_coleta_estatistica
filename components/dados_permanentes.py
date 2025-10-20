@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
-from api.api_competencia import get_competencias
+from api.api_competencia import get_competencias, carregar_tokens_exportacao
 from api.api_dados_estatisticas import get_dados_permanentes
 
 def formatar_competencia_payload(ano, mes):
@@ -132,8 +132,8 @@ def buscar_unidade_id_e_token(unidade_usuario): #crio uma função para buscar o
     """
     try:
         # Carrega dados das unidades (mesmo arquivo usado na API de competências)
-        from config.constants import TOKEN_UNIDADES_EXPORTACAO_DF
-        df_unidades = TOKEN_UNIDADES_EXPORTACAO_DF
+        from config.constants import get_token_unidades_exportacao
+        df_unidades = carregar_tokens_exportacao()
         
         # Busca a unidade que contém o nome do usuário
         unidade_match = df_unidades[ #verifico na coluna nome, se algum contem o nome da unidade do usuário e retorno para a variavel unidade_match
@@ -358,7 +358,7 @@ def converter_dados_para_dataframe_sem_filtro_criticidade(dados_formulario, nome
 def salvar_dados_permanentes_individuais(dados_filtrados, competencia_selecionada, unidade, output_dir): #função para salvar os dados permanentes em arquivos individuais
     """
     Salva dados permanentes em arquivos individuais
-    """
+    """  
     arquivos_salvos = [] #crio uma lista vazia para guardar os nomes dos arquivos salvos
     
     try:
@@ -455,6 +455,7 @@ def processar_dados_permanentes_completo():
         formularios_permanentes.append(formularios_para_add)
         competencia_selecionada = st.session_state.get('competencia_usuario', '')
         unidade_usuario = st.session_state.get('unidade_usuario', '')
+        # aqui temos a parte do diretorio, será que está atualizado?
         output_dir = st.session_state.get('output_dir', 'formularios_preenchidos')
         
         if not all([formularios_permanentes, competencia_selecionada, unidade_usuario]): #se alguma dessas variaveis estiver vazia
