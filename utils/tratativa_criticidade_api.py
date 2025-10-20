@@ -23,6 +23,11 @@ def tratativa_criticidade_api(output_dir, competencia):
     # Carrega o arquivo de de-para
     try:
         de_para_criticidade = pd.read_excel(DEPARA_CRITICIDADE)
+        
+        # 🔥 LIMPEZA: Remove espaços extras e normaliza
+        de_para_criticidade['Centro de Custo'] = de_para_criticidade['Centro de Custo'].astype(str).str.strip()
+        de_para_criticidade['Nova Ponderação'] = de_para_criticidade['Nova Ponderação'].astype(str).str.strip()
+        
         with temp_container.container():
             st.info(f"✅ Arquivo de de-para carregado com {len(de_para_criticidade)} registros")
     except FileNotFoundError:
@@ -34,7 +39,7 @@ def tratativa_criticidade_api(output_dir, competencia):
         st.error(f"Erro ao carregar arquivo de de-para: {e}")
         return False
 
-    inicio_arquivo = "Area_Criticidade_API_"
+    inicio_arquivo = "Area_Criticidade_API"
     
     with temp_container.container():
         st.info("🔍 Procurando arquivos para processar...")
@@ -66,36 +71,37 @@ def tratativa_criticidade_api(output_dir, competencia):
         with temp_container.container():
             st.info(f"📊 Arquivo carregado com {len(df_original)} registros")
         
-        # Limpa espaços extras dos nomes das colunas
+        # 🔥 LIMPEZA: Remove espaços extras dos nomes das colunas
         df_original.columns = df_original.columns.str.strip()
         
-        # Verifica se as colunas necessárias existem
+        # 🔥 LIMPEZA: Normaliza a coluna Centro de Custo
         if 'Centro de Custo' not in df_original.columns:
             temp_container.empty()
             st.error(f"Erro: Coluna 'Centro de Custo' não encontrada")
             st.error(f"Colunas disponíveis: {list(df_original.columns)}")
             return False
-            
+        
+        df_original['Centro de Custo'] = df_original['Centro de Custo'].astype(str).str.strip()
+        
+        # Verifica se a coluna Ponderação existe (se não, cria vazia)
         if 'Ponderação' not in df_original.columns:
             temp_container.empty()
-            st.warning(f"Aviso: Coluna 'Ponderação' não encontrada")
+            st.warning(f"Aviso: Coluna 'Ponderação' não encontrada - criando coluna vazia")
             df_original['Ponderação'] = None
         
-        # Verifica se o de-para tem as colunas necessárias
-        if 'Centro de Custo' not in de_para_criticidade.columns:
-            temp_container.empty()
-            st.error("Erro: Coluna 'Centro de Custo' não encontrada no arquivo de de-para")
-            return False
+        # 🔥 DEBUG: Mostra amostra dos dados ANTES do merge
+        with temp_container.container():
+            st.info("🔍 DEBUG: Verificando dados antes do merge...")
+            with st.expander("📊 Amostra de Centros de Custo no arquivo original"):
+                st.write(df_original[['Centro de Custo', 'Ponderação']].head(10))
             
-        if 'Nova Ponderação' not in de_para_criticidade.columns:
-            temp_container.empty()
-            st.error("Erro: Coluna 'Nova Ponderação' não encontrada no arquivo de de-para")
-            return False
+            with st.expander("📋 Amostra do arquivo de de-para"):
+                st.write(de_para_criticidade[['Centro de Custo', 'Nova Ponderação']].head(10))
         
+        # 🔥 MERGE: Faz o VLOOKUP
         with temp_container.container():
             st.info(f"🔄 Fazendo correspondência entre arquivos...")
         
-        # Faz o merge (VLOOKUP) usando Centro de Custo como chave
         df_atualizado = df_original.merge(
             de_para_criticidade[['Centro de Custo', 'Nova Ponderação']], 
             on='Centro de Custo', 
@@ -108,7 +114,15 @@ def tratativa_criticidade_api(output_dir, competencia):
         with temp_container.container():
             st.info(f"🎯 Encontrados {registros_com_match} registros com correspondência")
         
-        # Atualiza a coluna Ponderação onde houver match
+        # 🔥 DEBUG: Mostra registros SEM match
+        registros_sem_match = df_atualizado[df_atualizado['Nova Ponderação'].isna()]
+        if not registros_sem_match.empty:
+            with temp_container.container():
+                st.warning(f"⚠️ {len(registros_sem_match)} registros SEM correspondência no de-para")
+                with st.expander("Ver Centros de Custo sem match"):
+                    st.write(registros_sem_match[['Centro de Custo', 'Ponderação']].drop_duplicates())
+        
+        # 🔥 ATUALIZAÇÃO: Atualiza a coluna Ponderação onde houver match
         mask = df_atualizado['Nova Ponderação'].notna()
         df_atualizado.loc[mask, 'Ponderação'] = df_atualizado.loc[mask, 'Nova Ponderação']
         
@@ -128,13 +142,13 @@ def tratativa_criticidade_api(output_dir, competencia):
             st.info(f"💾 Arquivo principal salvo e atualizado na memória")
         
         # ============================================================
-        # *** 🔥 NOVA PARTE: FILTRAR E SALVAR OS 3 FORMULÁRIOS ***
+        # 🔥 FILTRAR E SALVAR OS 3 FORMULÁRIOS
         # ============================================================
         
         with temp_container.container():
             st.info("📂 Criando os 3 arquivos filtrados por tipo de criticidade...")
         
-        # Dicionário com os mapeamentos: Nome do Formulário → Texto que deve conter na Ponderação
+        # 🔥 CORREÇÃO: Mapeamento atualizado com textos EXATOS
         mapeamento_criticidade = {
             "Área (m²) x Nível de Criticidade (Área Crítica - I)": "Área Crítica - I",
             "Área (m²) x Nível de Criticidade (Área Semi Crítica)": "Área Semi Crítica",
@@ -144,9 +158,9 @@ def tratativa_criticidade_api(output_dir, competencia):
         arquivos_criados = []
         
         for nome_formulario, texto_filtro in mapeamento_criticidade.items():
-            # Filtra apenas as linhas que contêm o texto específico na coluna Ponderação
+            # 🔥 FILTRO CORRIGIDO: Normaliza antes de comparar
             df_filtrado = df_final[
-                df_final['Ponderação'].str.strip().str.lower() == texto_filtro.lower()
+                df_final['Ponderação'].astype(str).str.strip().str.lower() == texto_filtro.lower()
             ].copy()
             
             if not df_filtrado.empty:
@@ -165,6 +179,12 @@ def tratativa_criticidade_api(output_dir, competencia):
             else:
                 with temp_container.container():
                     st.warning(f"  ⚠️ {nome_formulario}: Nenhum registro encontrado com '{texto_filtro}'")
+                
+                # 🔥 DEBUG: Mostra quais ponderações existem
+                ponderacoes_unicas = df_final['Ponderação'].unique()
+                with st.expander(f"🔍 Ver ponderações disponíveis no arquivo"):
+                    for pond in ponderacoes_unicas:
+                        st.write(f"• `{pond}`")
         
         # Limpa mensagens temporárias
         temp_container.empty()
