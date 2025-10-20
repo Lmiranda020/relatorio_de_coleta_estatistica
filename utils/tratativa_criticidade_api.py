@@ -142,9 +142,9 @@ def tratativa_criticidade_api(output_dir, competencia):
         }
         
         arquivos_criados = []
-        
         for nome_formulario, texto_filtro in mapeamento_criticidade.items():
-            # Filtra apenas as linhas que contêm o texto específico na coluna Ponderação
+            # Filtra com MATCH EXATO para evitar sobreposição
+            # Exemplo: "Área Crítica - I" não deve pegar "Área Semi Crítica"
             df_filtrado = df_final[
                 df_final['Ponderação'].str.strip().str.lower() == texto_filtro.lower()
             ].copy()
