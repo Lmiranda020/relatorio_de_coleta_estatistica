@@ -366,8 +366,8 @@ def salvar_dados_permanentes_individuais(dados_filtrados, competencia_selecionad
             if not dados: # se os dados estiverem vazios
                 st.warning(f"Dados vazios para formulário: {nome_formulario}") #mostra essa mensagem de aviso
                 continue #e pula para o próximo formulário
-                
-                # LÓGICA CORRIGIDA: Verificar se é formulário de criticidade da API
+
+            # LÓGICA CORRIGIDA: Verificar se é formulário de criticidade da API
             if "Área (m²) x Nível de Criticidade" in nome_formulario:
                 st.info(f"Processando formulário de criticidade da API: {nome_formulario}")
                 
@@ -383,32 +383,28 @@ def salvar_dados_permanentes_individuais(dados_filtrados, competencia_selecionad
                     df.to_csv(caminho_arquivo, index=False, encoding="utf-8-sig", sep=";")
                     arquivos_salvos.append(caminho_arquivo)
                     
-                    # *** SALVAR NO SESSION_STATE APENAS O ARQUIVO PRINCIPAL ***
-                    # Este arquivo será processado pela tratativa_criticidade_api
+                    # *** CORREÇÃO PRINCIPAL ***
+                    # Inicializar formularios_data se não existir
                     if 'formularios_data' not in st.session_state:
                         st.session_state['formularios_data'] = {}
                     
-                    # Salva APENAS o arquivo principal (será processado depois)
-                    st.session_state['formularios_data']['Area_Criticidade_API'] = df.copy()
-                    
-                    # Lista dos três formulários de criticidade
+                    # Lista CORRIGIDA dos três formulários de criticidade
                     formularios_criticidade = [
                         "Área (m²) x Nível de Criticidade (Área Crítica - I)",
                         "Área (m²) x Nível de Criticidade (Área Semi Crítica)", 
                         "Área (m²) x Nível de Criticidade (Área Não Crítica - I)"
                     ]
                     
-                    # *** IMPORTANTE: NÃO salvar os 3 arquivos aqui ***
-                    # Eles serão criados pela função tratativa_criticidade_api
-                    # que fará o de-para e o filtro correto
+                    # Marcar todos os três como preenchidos com o mesmo DataFrame
+                    for form_criticidade in formularios_criticidade:
+                        st.session_state['formularios_data'][form_criticidade] = df.copy()
                     
                     st.success(f"Arquivo único de criticidade salvo: {nome_arquivo} ({len(df)} registros)")
-                    st.info(f"⚠️ Os 3 arquivos específicos serão criados após aplicar o de-para")
+                    st.success(f"✅ Marcados como processados: {len(formularios_criticidade)} formulários de criticidade")
                     
-                    # Listar quais serão criados depois
-                    with st.expander("📋 Arquivos que serão criados pela tratativa"):
-                        for form in formularios_criticidade:
-                            st.write(f"• {form}")
+                    # Listar quais foram marcados
+                    for form in formularios_criticidade:
+                        st.info(f"• {form}")
                 
             else:
                     
