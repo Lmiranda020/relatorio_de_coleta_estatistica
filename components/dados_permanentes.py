@@ -366,7 +366,7 @@ def salvar_dados_permanentes_individuais(dados_filtrados, competencia_selecionad
             if not dados: # se os dados estiverem vazios
                 st.warning(f"Dados vazios para formulário: {nome_formulario}") #mostra essa mensagem de aviso
                 continue #e pula para o próximo formulário
-                
+
             # LÓGICA CORRIGIDA: Verificar se é formulário de criticidade da API
             if "Área (m²) x Nível de Criticidade" in nome_formulario:
                 st.info(f"Processando formulário de criticidade da API: {nome_formulario}")
@@ -375,69 +375,36 @@ def salvar_dados_permanentes_individuais(dados_filtrados, competencia_selecionad
                 df = converter_dados_para_dataframe_sem_filtro_criticidade(dados, nome_formulario, competencia_selecionada)
                 
                 if not df.empty:
-                    # === NOVO: APLICAR DE-PARA AQUI, ANTES DE SALVAR ===
-                    from config.constants import DEPARA_CRITICIDADE
-                    
-                    try:
-                        # Carrega o de-para
-                        de_para_criticidade = pd.read_excel(DEPARA_CRITICIDADE)
-                        
-                        # Faz o merge para atualizar ponderações
-                        df_atualizado = df.merge(
-                            de_para_criticidade[['Centro de Custo', 'Nova Ponderação']], 
-                            on='Centro de Custo', 
-                            how='left'
-                        )
-                        
-                        # Atualiza ponderações onde houver match
-                        mask = df_atualizado['Nova Ponderação'].notna()
-                        df_atualizado.loc[mask, 'Ponderação'] = df_atualizado.loc[mask, 'Nova Ponderação']
-                        
-                        # Remove coluna auxiliar
-                        df = df_atualizado.drop(columns=['Nova Ponderação'])
-                        
-                        qtd_atualizados = mask.sum()
-                        st.success(f"✅ {qtd_atualizados} ponderações atualizadas via de-para")
-                        
-                    except Exception as e:
-                        st.warning(f"⚠️ Erro ao aplicar de-para: {e}")
-                        st.info("Continuando com dados originais da API")
-                    
-                    # === AGORA SALVA COM PONDERAÇÕES JÁ ATUALIZADAS ===
+                    # Salvar apenas UM arquivo com nome identificável
                     nome_arquivo = f"Area_Criticidade_API_{competencia_selecionada}.csv".replace("/", "-").replace(" ", "_")
                     caminho_arquivo = os.path.join(output_dir, nome_arquivo)
                     
-                    # Salva arquivo CSV único (JÁ COM PONDERAÇÕES)
+                    # Salva arquivo CSV único
                     df.to_csv(caminho_arquivo, index=False, encoding="utf-8-sig", sep=";")
                     arquivos_salvos.append(caminho_arquivo)
                     
-                    # Salva no session_state (JÁ COM PONDERAÇÕES)
+                    # *** CORREÇÃO PRINCIPAL ***
+                    # Inicializar formularios_data se não existir
                     if 'formularios_data' not in st.session_state:
                         st.session_state['formularios_data'] = {}
                     
-                    st.session_state['formularios_data']['Area_Criticidade_API'] = df.copy()
-                    
-                    st.success(f"Arquivo único de criticidade salvo: {nome_arquivo} ({len(df)} registros)")
-                    st.info(f"📋 Os 3 arquivos filtrados serão criados na consolidação")
-                    
-                    # Lista dos três formulários de criticidade
+                    # Lista CORRIGIDA dos três formulários de criticidade
                     formularios_criticidade = [
                         "Área (m²) x Nível de Criticidade (Área Crítica - I)",
                         "Área (m²) x Nível de Criticidade (Área Semi Crítica)", 
                         "Área (m²) x Nível de Criticidade (Área Não Crítica - I)"
                     ]
                     
-                    # *** IMPORTANTE: NÃO salvar os 3 arquivos aqui ***
-                    # Eles serão criados pela função tratativa_criticidade_api
-                    # que fará o de-para e o filtro correto
+                    # Marcar todos os três como preenchidos com o mesmo DataFrame
+                    for form_criticidade in formularios_criticidade:
+                        st.session_state['formularios_data'][form_criticidade] = df.copy()
                     
                     st.success(f"Arquivo único de criticidade salvo: {nome_arquivo} ({len(df)} registros)")
-                    st.info(f"⚠️ Os 3 arquivos específicos serão criados após aplicar o de-para")
+                    st.success(f"✅ Marcados como processados: {len(formularios_criticidade)} formulários de criticidade")
                     
-                    # Listar quais serão criados depois
-                    with st.expander("📋 Arquivos que serão criados pela tratativa"):
-                        for form in formularios_criticidade:
-                            st.write(f"• {form}")
+                    # Listar quais foram marcados
+                    for form in formularios_criticidade:
+                        st.info(f"• {form}")
                 
             else:
                     
