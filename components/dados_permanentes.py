@@ -355,20 +355,19 @@ def converter_dados_para_dataframe_sem_filtro_criticidade(dados_formulario, nome
         st.error(f"Erro ao converter dados do formulário '{nome_formulario}': {str(e)}")
         return pd.DataFrame()
 
-def salvar_dados_permanentes_individuais(dados_filtrados, competencia_selecionada, unidade, output_dir):
+def salvar_dados_permanentes_individuais(dados_filtrados, competencia_selecionada, unidade, output_dir): #função para salvar os dados permanentes em arquivos individuais
     """
     Salva dados permanentes em arquivos individuais
-    VERSÃO CORRIGIDA - Não salva os 3 formulários de criticidade aqui
     """  
-    arquivos_salvos = []
+    arquivos_salvos = [] #crio uma lista vazia para guardar os nomes dos arquivos salvos
     
     try:
-        for nome_formulario, dados in dados_filtrados.items():
-            if not dados:
-                st.warning(f"Dados vazios para formulário: {nome_formulario}")
-                continue
-
-            # LÓGICA CORRIGIDA: Verificar se é formulário de criticidade da API
+        for nome_formulario, dados in dados_filtrados.items(): #para cada nome de formulário e dados no dicionario de dados filtrados
+            if not dados: # se os dados estiverem vazios
+                st.warning(f"Dados vazios para formulário: {nome_formulario}") #mostra essa mensagem de aviso
+                continue #e pula para o próximo formulário
+                
+                # LÓGICA CORRIGIDA: Verificar se é formulário de criticidade da API
             if "Área (m²) x Nível de Criticidade" in nome_formulario:
                 st.info(f"Processando formulário de criticidade da API: {nome_formulario}")
                 
@@ -384,56 +383,74 @@ def salvar_dados_permanentes_individuais(dados_filtrados, competencia_selecionad
                     df.to_csv(caminho_arquivo, index=False, encoding="utf-8-sig", sep=";")
                     arquivos_salvos.append(caminho_arquivo)
                     
-                    # *** CORREÇÃO PRINCIPAL ***
-                    # Inicializar formularios_data se não existir
+                    # *** SALVAR NO SESSION_STATE APENAS O ARQUIVO PRINCIPAL ***
+                    # Este arquivo será processado pela tratativa_criticidade_api
                     if 'formularios_data' not in st.session_state:
                         st.session_state['formularios_data'] = {}
                     
-                    # *** MUDANÇA CRÍTICA: NÃO salvar os 3 formulários aqui! ***
-                    # A tratativa_criticidade_api() que vai fazer isso depois
-                    # Salvar apenas o arquivo principal (completo) no session_state
+                    # Salva APENAS o arquivo principal (será processado depois)
                     st.session_state['formularios_data']['Area_Criticidade_API'] = df.copy()
                     
+                    # Lista dos três formulários de criticidade
+                    formularios_criticidade = [
+                        "Área (m²) x Nível de Criticidade (Área Crítica - I)",
+                        "Área (m²) x Nível de Criticidade (Área Semi Crítica)", 
+                        "Área (m²) x Nível de Criticidade (Área Não Crítica - I)"
+                    ]
+                    
+                    # *** IMPORTANTE: NÃO salvar os 3 arquivos aqui ***
+                    # Eles serão criados pela função tratativa_criticidade_api
+                    # que fará o de-para e o filtro correto
+                    
                     st.success(f"Arquivo único de criticidade salvo: {nome_arquivo} ({len(df)} registros)")
-                    st.info("📋 Os 3 formulários filtrados serão criados na etapa de consolidação")
+                    st.info(f"⚠️ Os 3 arquivos específicos serão criados após aplicar o de-para")
+                    
+                    # Listar quais serão criados depois
+                    with st.expander("📋 Arquivos que serão criados pela tratativa"):
+                        for form in formularios_criticidade:
+                            st.write(f"• {form}")
                 
             else:
                     
-                # Converte para DataFrame
+                # Converte para DataFrame, se há dados, para isso chama a função que criei acima, passo o nome do formulário e os dados
+                # CORREÇÃO: Passar a competencia_selecionada como terceiro parâmetro
                 df = converter_dados_para_dataframe(dados, nome_formulario, competencia_selecionada)
                 
-                if df.empty:
-                    st.warning(f"DataFrame vazio após conversão para formulário: {nome_formulario}")
-                    continue
+                if df.empty:#agora se o dataframe estiver vazio
+                    st.warning(f"DataFrame vazio após conversão para formulário: {nome_formulario}") #mostra essa mensagem de aviso
+                    continue #e pula para o próximo formulário
+                
+                # # Substitui ponto por vírgula na coluna Quantidade se existir
+                # if 'Quantidade' in df.columns: # mas se exitir a coluna Quantidade, apos converter os dados para um dataframe
+                #     df['Quantidade'] = df['Quantidade'].astype(str).str.replace('.', ',') #substituo o ponto por vírgula, e converto para string
                 
                 # Nome do arquivo
-                nome_arquivo = f"{nome_formulario}_{competencia_selecionada}.csv".replace("/", "-").replace(" ", "_")
-                caminho_arquivo = os.path.join(output_dir, nome_arquivo)
+                nome_arquivo = f"{nome_formulario}_{competencia_selecionada}.csv".replace("/", "-").replace(" ", "_") #crio o nome do arquivo, juntando o nome do formulário com a competência, substituindo a barra por traço e os espaços por underline
+                caminho_arquivo = os.path.join(output_dir, nome_arquivo) #crio o caminho do arquivo, juntando o diretório de saída com o nome do arquivo
                 
                 # Salva arquivo CSV
-                df.to_csv(caminho_arquivo, index=False, encoding="utf-8-sig", sep=";")
-                arquivos_salvos.append(caminho_arquivo)
+                df.to_csv(caminho_arquivo, index=False, encoding="utf-8-sig", sep=";") #salvo o arquivo em formato CSV, sem o índice, com codificação utf-8-sig e separador ponto e vírgula
+                arquivos_salvos.append(caminho_arquivo) #adiciono o caminho do arquivo na lista de arquivos salvos
                 
-                # Salva no session_state
-                if 'formularios_data' not in st.session_state:
-                    st.session_state['formularios_data'] = {}
-                st.session_state['formularios_data'][nome_formulario] = df
+                # Salva no session_state para consolidação
+                if 'formularios_data' not in st.session_state: #se não existir a chave formularios_data no session_state
+                    st.session_state['formularios_data'] = {} #crio a chave como um dicionario vazio
+                st.session_state['formularios_data'][nome_formulario] = df #adiciono o dataframe na chave formularios_data, com o nome do formulário como chave e o dataframe como valor
                 
-                st.success(f"Dados permanentes salvos: {nome_arquivo} ({len(df)} registros)")
+                st.success(f"Dados permanentes salvos: {nome_arquivo} ({len(df)} registros)") #mostra essa mensagem de sucesso, informando o nome do arquivo e a quantidade de registros
         
-        return arquivos_salvos
+        return arquivos_salvos #no final retorno a lista de arquivos salvos, para onde chamou a função
         
-    except Exception as e:
-        st.error(f"Erro ao salvar dados permanentes: {str(e)}")
-        return []
-
+    except Exception as e: #caso de algum erro na hora de executar o try
+        st.error(f"Erro ao salvar dados permanentes: {str(e)}") #mostra essa mensagem de erro
+        return [] # e retonna uma lista vazia para onde chamou a função
     
 
 
 def processar_dados_permanentes_completo():
     """
     Função principal que executa todo o fluxo dos dados permanentes
-    VERSÃO CORRIGIDA - Remove duplicação de formulários de criticidade
+    VERSÃO CORRIGIDA com normalização de formatos
     """
     try:
         # Pegar variáveis do session_state
@@ -442,55 +459,62 @@ def processar_dados_permanentes_completo():
         formularios_permanentes.append(formularios_para_add)
         competencia_selecionada = st.session_state.get('competencia_usuario', '')
         unidade_usuario = st.session_state.get('unidade_usuario', '')
+        # aqui temos a parte do diretorio, será que está atualizado?
         output_dir = st.session_state.get('output_dir', 'formularios_preenchidos')
         
-        if not all([formularios_permanentes, competencia_selecionada, unidade_usuario]):
-            st.error("Dados insuficientes para processar dados permanentes")
-            return False
+        if not all([formularios_permanentes, competencia_selecionada, unidade_usuario]): #se alguma dessas variaveis estiver vazia
+            st.error("Dados insuficientes para processar dados permanentes") #mostra essa mensagem de erro
+            return False #e retorna False, para onde chamou essa função
         
-        st.info(f"Processando {len(formularios_permanentes) - 1} formulários permanentes...")
-        st.info(f"Competência selecionada: {competencia_selecionada}")
+        st.info(f"Processando {len(formularios_permanentes) - 1} formulários permanentes...") #mostra essa mensagem informando a quantidade de formulários permanentes que serão processados
+        st.info(f"Competência selecionada: {competencia_selecionada}") #mostra essa mensagem informando a competência selecionada
         
-        # 1. Encontrar competência anterior válida
-        with st.spinner("Buscando competência anterior válida..."):
-            competencia_valida = encontrar_competencia_anterior_valida(
-                competencia_selecionada,
-                unidade_usuario
+        # 1. Encontrar competência anterior válida (com nova lógica recursiva e normalização)
+        with st.spinner("Buscando competência anterior válida..."): #mostra essa mensagem enquanto executa a função que está dentro do with
+            competencia_valida = encontrar_competencia_anterior_valida( #aqui é a função que vai executar a api de competências e buscar a competência anterior válida, que são as funções que criei acima
+                competencia_selecionada, #passo a competência selecionada
+                unidade_usuario #e a unidade do usuário
             )
         
-        if not competencia_valida:
-            st.error("Não foi encontrada competência anterior válida")
-            st.info("Verifique se existem competências anteriores com status FECHADA ou REABERTA")
-            return False
+        if not competencia_valida: #se não encontrar a competência válida, ou seja se retornar none
+            st.error("Não foi encontrada competência anterior válida") #mostra essa mensagem de erro
+            st.info("Verifique se existem competências anteriores com status FECHADA ou REABERTA")#mostra essa mensagem de informação
+            return False #e retorna False, para onde chamou essa função
         
         # Mostrar detalhes da competência encontrada
-        competencia_formatada = competencia_valida.get('competencia_formatada', 'N/A')
-        status_competencia = competencia_valida.get('situacao', 'N/A')
-        st.success(f"Competência válida: {competencia_formatada} (Status: {status_competencia})")
+        competencia_formatada = competencia_valida.get('competencia_formatada', 'N/A') # ele buscar na variavel competencia_valida, a chave competencia_formatada, se não encontrar retorna N/A
+        status_competencia = competencia_valida.get('situacao', 'N/A') # ele buscar na variavel competencia_valida, a chave situacao, se não encontrar retorna N/A
+        st.success(f"Competência válida: {competencia_formatada} (Status: {status_competencia})") #mostra essa mensagem de sucesso, informando a competência válida e o status da competência
         
         # 2. Buscar ID da unidade e token
-        unidade_id, token = buscar_unidade_id_e_token(unidade_usuario)
-        if not unidade_id or not token:
-            st.error("Não foi possível obter dados da unidade")
-            return False
+        unidade_id, token = buscar_unidade_id_e_token(unidade_usuario) #chama a função que criei acima, para buscar o id e o token da unidade do usuário
+        #retorna o id e o token da unidade do usuário, e guarda nas variaveis unidade_id e token
+        if not unidade_id or not token: #se não encontrar o id ou o token
+            st.error("Não foi possível obter dados da unidade") #mostra essa mensagem de erro
+            return False #e retorna False, para onde chamou essa função
         
-        # Armazenar unidade_id no session_state
+        # ADICIONE ESTA LINHA:
         st.session_state['unidade_id'] = unidade_id
         
-        # 3. Preparar payload para API
+        # 3. Preparar payload para API (já no formato correto)
         payload_data = {
-            'competencia_formatada': competencia_formatada,
+            'competencia_formatada': competencia_formatada,  # Já vem normalizada
             'unidade_id': unidade_id
         }
         
-        st.info(f"Consultando dados da competência: {competencia_formatada}")
+        st.info(f"Consultando dados da competência: {competencia_formatada}") #mostra essa mensagem informando a competência que está sendo consultada
         
         # 4. Buscar dados permanentes via API
-        with st.spinner("Consultando API de dados permanentes..."):
+        with st.spinner("Consultando API de dados permanentes..."): #mostra essa mensagem enquanto executa a função que está dentro do with
+            # Adicionar token à competencia_valida
             competencia_valida['token'] = token
             competencia_valida['unidade_id'] = unidade_id
             
+            #a competencia_valida é um dicionario, que contém todas as informações da competência válida encontrada, incluindo o token e o id da unidade
+            #as outras infomações de competencia_valida são as mesmas que vieram da API de competências, que são necessárias para a API de dados permanentes
+            #ele também é um dicionario, que contém todas as informações da competência válida encontrada, incluindo o token e o id da unidade
             dados_api = get_dados_permanentes(competencia_valida, payload_data)
+            #aqui eu chamo a função que está na api de dados estatísticos, que consome a API de dados permanentes, passando a competencia_valida e o payload_data
         
         if not dados_api:
             st.error("Não foi possível obter dados da API de dados permanentes")
@@ -498,7 +522,7 @@ def processar_dados_permanentes_completo():
         
         st.success("Dados obtidos da API com sucesso")
         
-        # Debug
+        # Debug: mostra estrutura dos dados recebidos
         with st.expander("Estrutura dos dados recebidos (Debug)"):
             st.write("Chaves principais:", list(dados_api.keys()) if isinstance(dados_api, dict) else "Não é dict")
             st.write("Primeiros dados:", str(dados_api)[:500] + "..." if len(str(dados_api)) > 500 else str(dados_api))
@@ -513,7 +537,7 @@ def processar_dados_permanentes_completo():
         # 6. Salvar arquivos individuais
         arquivos_salvos = salvar_dados_permanentes_individuais(
             dados_filtrados,
-            competencia_selecionada,
+            competencia_selecionada,  # Salva com a competência atual, não a anterior
             unidade_usuario,
             output_dir
         )
@@ -523,6 +547,21 @@ def processar_dados_permanentes_completo():
             with st.expander("Arquivos gerados"):
                 for arquivo in arquivos_salvos:
                     st.write(f"📄 {os.path.basename(arquivo)}")
+
+            # === NOVA SEÇÃO: SALVAR HISTÓRICO DO PROCESSAMENTO ===
+            if 'historico_processamento_api' not in st.session_state:
+                st.session_state['historico_processamento_api'] = []
+
+            # Criar registro do processamento atual
+            registro_processamento = {
+                'timestamp': datetime.now(),
+                'competencia_selecionada': competencia_selecionada,
+                'competencia_anterior_utilizada': competencia_formatada,
+                'status_competencia': status_competencia,
+                'formularios_processados': list(dados_filtrados.keys()),
+                'total_arquivos': len(arquivos_salvos),
+                'arquivos_gerados': [os.path.basename(arquivo) for arquivo in arquivos_salvos]
+            }
 
             # === SALVAR HISTÓRICO DO PROCESSAMENTO ===
             if 'historico_processamento_api' not in st.session_state:
@@ -539,15 +578,11 @@ def processar_dados_permanentes_completo():
                 'arquivos_gerados': [os.path.basename(arquivo) for arquivo in arquivos_salvos]
             }
 
-            # Salvar no histórico (manter apenas os últimos 5)
+            # Salvar no histórico (manter apenas os últimos 5 processamentos)
             st.session_state['historico_processamento_api'].append(registro_processamento)
             if len(st.session_state['historico_processamento_api']) > 5:
                 st.session_state['historico_processamento_api'] = st.session_state['historico_processamento_api'][-5:]
 
-            # *** IMPORTANTE: Marcar que dados foram processados, mas NÃO criar os 3 formulários ainda ***
-            # Eles serão criados pela tratativa_criticidade_api() durante a consolidação
-            st.session_state['dados_permanentes_processados'] = True
-            
             return True
         else:
             st.warning("Nenhum arquivo foi gerado")
@@ -555,6 +590,6 @@ def processar_dados_permanentes_completo():
             
     except Exception as e:
         st.error(f"Erro no processamento dos dados permanentes: {str(e)}")
-        st.exception(e)
+        st.exception(e)  # Para debug, mostra o stack trace completo
         return False
     

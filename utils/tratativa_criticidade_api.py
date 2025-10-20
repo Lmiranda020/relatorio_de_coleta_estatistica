@@ -115,6 +115,8 @@ def tratativa_criticidade_api(output_dir, competencia):
         # Remove a coluna auxiliar do merge
         df_final = df_atualizado.drop(columns=['Nova Ponderação'])
         
+        # ✅ ATUALIZA O ARQUIVO PRINCIPAL NA MEMÓRIA
+        st.session_state['formularios_data']['Area_Criticidade_API'] = df_final.copy()
         
         # ✅ SALVA O ARQUIVO PRINCIPAL NO DISCO
         competencia_normalizada = competencia.replace("/", "-").replace(" ", "_")
@@ -123,7 +125,7 @@ def tratativa_criticidade_api(output_dir, competencia):
         df_final.to_csv(caminho_arquivo_principal, index=False, sep=';', encoding='utf-8-sig')
         
         with temp_container.container():
-            st.info(f"💾 Arquivo principal salvo no disco (backup)")
+            st.info(f"💾 Arquivo principal salvo e atualizado na memória")
         
         # ============================================================
         # *** 🔥 NOVA PARTE: FILTRAR E SALVAR OS 3 FORMULÁRIOS ***
