@@ -1501,10 +1501,10 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
             if st.session_state.get('consolidar', False): # ele verifica se existi esse consolidar na memoria
                 from utils.tratativa_criticidade_api import tratativa_criticidade_api
 
-                # *** PASSO 1: REMOVER VERSÃO ANTIGA DO SESSION_STATE ***
-                # Remove a versão desatualizada ANTES da tratativa
-                if 'Area_Criticidade_API' in st.session_state.get('formularios_data', {}):
-                    del st.session_state['formularios_data']['Area_Criticidade_API']
+                # # *** PASSO 1: REMOVER VERSÃO ANTIGA DO SESSION_STATE ***
+                # # Remove a versão desatualizada ANTES da tratativa
+                # if 'Area_Criticidade_API' in st.session_state.get('formularios_data', {}):
+                #     del st.session_state['formularios_data']['Area_Criticidade_API']
                 
 
                 # Cole isso no seu arquivo principal, ANTES da linha:
