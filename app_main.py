@@ -1510,13 +1510,13 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                 # Cole isso no seu arquivo principal, ANTES da linha:
                 # debig para ver os formulario que traz da api e quais estão sendo salvo na memoria do streamlit
 
-                st.markdown("### 🔍 DEBUG - Formulários na Memória")
-                formularios_data = st.session_state.get('formularios_data', {})
+                # st.markdown("### 🔍 DEBUG - Formulários na Memória")
+                # formularios_data = st.session_state.get('formularios_data', {})
 
-                st.write(f"**Total:** {len(formularios_data)} formulários")
+                # st.write(f"**Total:** {len(formularios_data)} formulários")
 
-                for nome in formularios_data.keys():
-                    st.write(f"- `{nome}`")
+                # for nome in formularios_data.keys():
+                #     st.write(f"- `{nome}`")
 
                 st.markdown("---")
                 # PASSO 2: Executar tratativa de criticidade
