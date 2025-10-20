@@ -116,7 +116,7 @@ def tratativa_criticidade_api(output_dir, competencia):
         df_final = df_atualizado.drop(columns=['Nova Ponderação'])
         
         
-        # SALVA O ARQUIVO PRINCIPAL NO DISCO
+        # ✅ SALVA O ARQUIVO PRINCIPAL NO DISCO
         competencia_normalizada = competencia.replace("/", "-").replace(" ", "_")
         nome_arquivo_principal = f"Area_Criticidade_API_{competencia_normalizada}.csv"
         caminho_arquivo_principal = os.path.join(output_dir, nome_arquivo_principal)
@@ -125,9 +125,9 @@ def tratativa_criticidade_api(output_dir, competencia):
         with temp_container.container():
             st.info(f"💾 Arquivo principal salvo no disco (backup)")
         
-
-        # FILTRAR E SALVAR OS 3 FORMULÁRIOS ***
-
+        # ============================================================
+        # *** 🔥 NOVA PARTE: FILTRAR E SALVAR OS 3 FORMULÁRIOS ***
+        # ============================================================
         
         with temp_container.container():
             st.info("📂 Criando os 3 arquivos filtrados por tipo de criticidade...")
@@ -168,6 +168,7 @@ def tratativa_criticidade_api(output_dir, competencia):
         temp_container.empty()
         
         # Mensagem final de sucesso
+        st.success(f"✅ Tratativa concluída!")
         st.success(f"📊 {registros_com_match} ponderações atualizadas")
         st.success(f"📂 {len(arquivos_criados)} arquivos de criticidade criados")
         

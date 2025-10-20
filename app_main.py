@@ -46,7 +46,7 @@ except ImportError as e:
     st.warning(f"Módulos de API de centro de custo não encontrados: {e}")
     API_CENTRO_CUSTO_DISPONIVEL = False
 from components.modal_feedback_pos_envio import modal_feedback_sucesso
-from utils.file_utils import criar_zip_formularios, get_tamanho_legivel
+from utils.file_utils import criar_zip_formularios, get_tamanho_legivel, organizar_arquivos_para_download, rastrear_arquivo_salvo
 import zipfile
 from io import BytesIO
 import tempfile
@@ -780,7 +780,7 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                     return len(problemas_encontrados) == 0, problemas_encontrados
                 
                 consolidado_valido, problemas_ponderacao = validar_consolidado_para_envio()
-                envio_habilitado = consolidar_habilitado and st.session_state['consolidar'] and consolidado_valido
+                envio_habilitado = consolidar_habilitado and st.session_state['consolidar'] and consolidado_valido and st.session_state.get('arquivos_foram_baixados', False)
 
                 # Botão de envio para KPIH - só habilitado após consolidação
                 # ============================================================================
@@ -789,7 +789,11 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                 # ============================================================================
 
                 # Botão de envio para KPIH - só habilitado após consolidação
-                if st.button("🚀 Enviar dados para KPIH", disabled=not st.session_state['consolidar']):
+                if st.button(
+                    "🚀 Enviar dados para KPIH", 
+                    disabled=not envio_habilitado,  # Mudou aqui
+                    help="Downloads precisam ser realizados antes do envio" if not st.session_state.get('arquivos_foram_baixados', False) else "Pronto para enviar!"
+                ):
                     if envio_habilitado:
                         try:
                             # === SEÇÃO 1: EXECUTAR API DE CENTRO DE CUSTO ===
@@ -945,7 +949,10 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                             for problema in problemas_ponderacao:
                                 st.write(f"• {problema['formulario']}: {problema['registros_problematicos']} registro(s) com ponderação vazia")
                             st.info("💡 Volte aos formulários com problema e corrija as ponderações antes de enviar.")
-                        
+                        elif not st.session_state.get('arquivos_foram_baixados', False):
+                            st.error("❌ Você precisa baixar os arquivos antes de enviar!")
+                            st.info("👈 Veja na barra lateral os botões de download")
+                            
                         if 'unidade_id' not in st.session_state:
                             st.info("💡 Dica: Execute primeiro o processo de dados permanentes para configurar a unidade.")
 
@@ -1518,7 +1525,6 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                 # for nome in formularios_data.keys():
                 #     st.write(f"- `{nome}`")
 
-                st.markdown("---")
                 # PASSO 2: Executar tratativa de criticidade
                 resultado_tratativa_criticidade_api = tratativa_criticidade_api(OUTPUT_DIR, competencia_normalizada)
                 
@@ -1603,55 +1609,58 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                         else:
                             st.info("✏️ Dados de criticidade preenchidos manualmente - usando as 3 versões")
 
-                        # === PROCESSAMENTO DOS FORMULÁRIOS ===
-                        st.markdown("#### 📋 Processando formulários...")
+                        # === PROCESSAMENTO DOS FORMULÁRIOS (OCULTO EM EXPANDER) ===
+                        with st.expander("🔍 Ver detalhes do processamento", expanded=False):
+                            st.markdown("#### 📋 Processando formulários...")
 
-                        for nome, df in st.session_state['formularios_data'].items():
-                            # Pula os formulários da lista de ignorados
-                            if nome in formularios_a_ignorar:
-                                st.info(f"  ⏭️ Pulando: {nome}")
-                                continue
-                            
-                            df_limpo = df.copy()
-                            df_limpo = df_limpo[df_limpo['Quantidade'].astype(str) != "0"].copy()
-                            
-                            if not df_limpo.empty:
-                                dfs_para_consolidar.append(df_limpo)
-                                formularios_consolidados.append(nome)
-                                st.success(f"  ✅ Adicionado: {nome} ({len(df_limpo)} registros)")
-                            else:
-                                st.warning(f"  ⚠️ Sem dados válidos: {nome}")
+                            for nome, df in st.session_state['formularios_data'].items():
+                                # Pula os formulários da lista de ignorados
+                                if nome in formularios_a_ignorar:
+                                    st.info(f"  ⏭️ Pulando: {nome}")
+                                    continue
+                                
+                                df_limpo = df.copy()
+                                df_limpo = df_limpo[df_limpo['Quantidade'].astype(str) != "0"].copy()
+                                
+                                if not df_limpo.empty:
+                                    dfs_para_consolidar.append(df_limpo)
+                                    formularios_consolidados.append(nome)
+                                    st.success(f"  ✅ Adicionado: {nome} ({len(df_limpo)} registros)")
+                                else:
+                                    st.warning(f"  ⚠️ Sem dados válidos: {nome}")
 
-                        # === ADICIONA CÁLCULO DE ÁGUA ===
-                        st.markdown("#### 💧 Processando cálculo de água...")
+                            # === ADICIONA CÁLCULO DE ÁGUA ===
+                            st.markdown("#### 💧 Processando cálculo de água...")
 
-                        if st.session_state.get('resultado_calculo_agua') is not None:
-                            df_agua = st.session_state['resultado_calculo_agua'].copy()
-                            df_agua = df_agua[df_agua['Quantidade'] != 0].copy()
-                            
-                            if not df_agua.empty:
-                                df_agua['Quantidade'] = df_agua['Quantidade'].apply(lambda x: f"{x:.2f}".replace(".", ","))
-                                dfs_para_consolidar.append(df_agua)
-                                formularios_consolidados.append("Consumo_Agua")
-                                st.success(f"  ✅ Água: {len(df_agua)} registros")
-                            else:
-                                st.warning("  ⚠️ Dados de água sem registros válidos")
+                            if st.session_state.get('resultado_calculo_agua') is not None:
+                                df_agua = st.session_state['resultado_calculo_agua'].copy()
+                                df_agua = df_agua[df_agua['Quantidade'] != 0].copy()
+                                
+                                if not df_agua.empty:
+                                    df_agua['Quantidade'] = df_agua['Quantidade'].apply(lambda x: f"{x:.2f}".replace(".", ","))
+                                    dfs_para_consolidar.append(df_agua)
+                                    formularios_consolidados.append("Consumo_Agua")
+                                    st.success(f"  ✅ Água: {len(df_agua)} registros")
+                                else:
+                                    st.warning("  ⚠️ Dados de água sem registros válidos")
 
-                        if st.session_state.get('df_agua_quente_final') is not None:
-                            df_agua_quente_final = st.session_state['df_agua_quente_final'].copy()
-                            df_agua_quente_final = df_agua_quente_final[df_agua_quente_final['Quantidade'] != 0].copy()
-                            
-                            if not df_agua_quente_final.empty:
-                                df_agua_quente_final['Quantidade'] = df_agua_quente_final['Quantidade'].apply(lambda x: f"{x:.2f}".replace(".", ","))
-                                dfs_para_consolidar.append(df_agua_quente_final)
-                                formularios_consolidados.append("Consumo_Agua_Quente")
-                                st.success(f"  ✅ Água Quente: {len(df_agua_quente_final)} registros")
-                            else:
-                                st.warning("  ⚠️ Dados de água quente sem registros válidos")
+                            if st.session_state.get('df_agua_quente_final') is not None:
+                                df_agua_quente_final = st.session_state['df_agua_quente_final'].copy()
+                                df_agua_quente_final = df_agua_quente_final[df_agua_quente_final['Quantidade'] != 0].copy()
+                                
+                                if not df_agua_quente_final.empty:
+                                    df_agua_quente_final['Quantidade'] = df_agua_quente_final['Quantidade'].apply(lambda x: f"{x:.2f}".replace(".", ","))
+                                    dfs_para_consolidar.append(df_agua_quente_final)
+                                    formularios_consolidados.append("Consumo_Agua_Quente")
+                                    st.success(f"  ✅ Água Quente: {len(df_agua_quente_final)} registros")
+                                else:
+                                    st.warning("  ⚠️ Dados de água quente sem registros válidos")
+                        
+                        # Mensagem resumida fora do expander
+                        st.info(f"✅ Processamento concluído: {len(formularios_consolidados)} fonte(s) de dados identificadas")
 
                         # === CONSOLIDAÇÃO FINAL ===
                         st.markdown("---")
-                        st.markdown("#### 🎯 Gerando arquivo consolidado...")
 
                         if dfs_para_consolidar:
                             df_final = pd.concat(dfs_para_consolidar, ignore_index=True)
@@ -1674,8 +1683,6 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                                 
                                 # Salva o arquivo
                                 df_final.to_csv(arquivo_consolidado, index=False, encoding="utf-8-sig", sep=";")
-                                
-                                st.success("✅ Consolidação concluída com sucesso!")
                                 
                                 # === RESUMO DETALHADO ===
                                 st.markdown("### 📈 Resumo da Consolidação")
@@ -1715,83 +1722,138 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                             st.error("❌ Nenhum dado disponível para consolidação")
                             st.session_state['consolidar'] = False
                     
-                    # === SEÇÃO DE DOWNLOAD PROFISSIONAL ===
                     st.markdown("---")
-                    st.markdown("### 📥 Download dos Resultados")
-
-                    col_info, col_downloads = st.columns([2, 3])
-
-                    with col_info:
-                        st.info("""
-                        **📦 Pacote Completo (ZIP)**
-                        - Todos os formulários organizados
-                        - Arquivo consolidado
-                        - Dados permanentes da API
-                        - Cálculos realizados
-                        - Arquivo README com instruções
+                    st.markdown("## 📥 Sistema de Download de Arquivos")
+                    
+                    # Flag para rastrear se baixou tudo
+                    if 'arquivos_foram_baixados' not in st.session_state:
+                        st.session_state['arquivos_foram_baixados'] = False
+                    
+                    # === EXIBIR DOWNLOADS NA SIDEBAR ===
+                    # Coloca os downloads em um local bem visível
+                    with st.sidebar:
+                        st.markdown("---")
                         
-                        **📄 Consolidado Individual**
-                        - Arquivo pronto para envio ao KPIH
-                        - Todos os dados em um único CSV
-                        """)
-
-                    with col_downloads:
-                        # Botão 1: Download do Consolidado
-                        st.markdown("#### 🎯 Arquivo Principal")
+                        estrutura = organizar_arquivos_para_download(
+                            OUTPUT_DIR,
+                            competencia_normalizada,
+                            unidade,
+                            st.session_state.get('formularios_data', {})
+                        )
                         
-                        try:
-                            with open(arquivo_consolidado, 'rb') as file:
-                                dados_consolidado = file.read()
-                                tamanho_consolidado = get_tamanho_legivel(len(dados_consolidado))
+                        if estrutura['total_arquivos'] > 0:
+                            st.markdown("### 📥 **DOWNLOADS PRONTOS**")
+                            
+                            st.info(f"✅ {estrutura['total_arquivos']} arquivo(s) disponível(is)")
+                            
+                            # ========================================
+                            # BOTÃO 1: DOWNLOAD DO CONSOLIDADO
+                            # ========================================
+                            if estrutura['consolidado']:
+                                st.markdown("#### 🎯 Arquivo Principal")
+                                for arquivo_info in estrutura['consolidado']:
+                                    try:
+                                        with open(arquivo_info['caminho'], 'rb') as f:
+                                            dados = f.read()
+                                        
+                                        if st.download_button(
+                                            label=f"📄 Baixar Consolidado\n({arquivo_info['nome'][:30]}...)",
+                                            data=dados,
+                                            file_name=arquivo_info['nome'],
+                                            mime="text/csv",
+                                            use_container_width=True,
+                                            key=f"download_consolidado_{id(arquivo_info)}"
+                                        ):
+                                            st.session_state['arquivos_foram_baixados'] = True
+                                            st.toast("✅ Download do consolidado realizado!", icon="✅")
+                                    
+                                    except Exception as e:
+                                        st.error(f"Erro ao preparar download: {e}")
                                 
-                                st.download_button(
-                                    label=f"📄 Baixar Consolidado ({tamanho_consolidado})",
-                                    data=dados_consolidado,
-                                    file_name=os.path.basename(arquivo_consolidado),
-                                    mime="text/csv",
-                                    use_container_width=True,
-                                    help="Arquivo pronto para envio ao KPIH"
+                                st.caption("Este arquivo deve ser enviado ao KPIH")
+                            
+                            st.markdown("---")
+                            
+                            # ========================================
+                            # BOTÃO 2: DOWNLOAD DO ZIP COMPLETO
+                            # ========================================
+                            st.markdown("#### 📦 Pacote Completo")
+                            
+                            try:
+                                
+                                zip_buffer, qtd_arquivos = criar_zip_formularios(
+                                    OUTPUT_DIR,
+                                    competencia,
+                                    unidade,
+                                    estrutura
                                 )
-                        except Exception as e:
-                            st.error(f"Erro ao preparar consolidado: {e}")
+                                
+                                tamanho_zip = get_tamanho_legivel(len(zip_buffer.getvalue()))
+                                nome_zip = f"Relatorio_{unidade}_{competencia_normalizada}.zip"
+                                
+                                if st.download_button(
+                                    label=f"📦 Baixar Tudo\n({qtd_arquivos} arquivos • {tamanho_zip})",
+                                    data=zip_buffer,
+                                    file_name=nome_zip,
+                                    mime="application/zip",
+                                    use_container_width=True,
+                                    type="primary",
+                                    key="download_zip_completo"
+                                ):
+                                    st.session_state['arquivos_foram_baixados'] = True
+                                    st.toast("✅ Download do ZIP realizado!", icon="✅")
+                                
+                                st.caption("Backup completo com todos os dados")
+                                
+                            except Exception as e:
+                                st.error(f"Erro ao criar ZIP: {e}")
+                            
+                            st.markdown("---")
+                            
+                            # Status
+                            if st.session_state['arquivos_foram_baixados']:
+                                st.success("✅ Downloads realizados!")
+                                st.info("Agora você pode enviar os dados para KPIH →")
+                            else:
+                                st.warning("⏳ Realize os downloads antes de continuar")
+                    
+                    # ============================================================
+                    # RESUMO VISUAL NA ÁREA PRINCIPAL
+                    # ============================================================
+                    st.info(f"""
+                    **📋 Resumo da Consolidação:**
+                    - Total de arquivos: {estrutura['total_arquivos']}
+                    - Tamanho total: {get_tamanho_legivel(estrutura['total_tamanho'])}
+                    - Todos os downloads já estão na barra lateral →
+                    """)
+                    
+                    # Mostrar estrutura de arquivos de forma legível
+                    with st.expander("📊 Ver estrutura dos arquivos"):
                         
-                        st.markdown("#### 📦 Pacote Completo")
+                        if estrutura['consolidado']:
+                            st.markdown("**Consolidado:**")
+                            for arq in estrutura['consolidado']:
+                                st.write(f"  📄 {arq['nome']} ({get_tamanho_legivel(arq['tamanho'])})")
                         
-                        # Botão 2: Download do ZIP
-                        try:
-                            zip_buffer, qtd_arquivos = criar_zip_formularios(
-                                OUTPUT_DIR, 
-                                competencia_normalizada, 
-                                unidade
-                            )
-                            
-                            tamanho_zip = get_tamanho_legivel(len(zip_buffer.getvalue()))
-                            nome_zip = f"Relatorio_Coleta_{unidade}_{competencia_normalizada}.zip"
-                            
-                            st.download_button(
-                                label=f"📦 Baixar Tudo ({qtd_arquivos} arquivos • {tamanho_zip})",
-                                data=zip_buffer,
-                                file_name=nome_zip,
-                                mime="application/zip",
-                                use_container_width=True,
-                                type="primary",
-                                help="Backup completo com todos os formulários organizados"
-                            )
-                            
-                            st.success(f"✅ {qtd_arquivos} arquivos prontos para download")
-                            
-                        except Exception as e:
-                            st.error(f"❌ Erro ao criar pacote ZIP: {e}")
-                            st.info("💡 Você ainda pode baixar o consolidado acima")
-
-                    st.markdown("---")
-
-                    # Dica profissional
-                    st.info("💡 **Dica:** Baixe o pacote completo (ZIP) como backup. Use o consolidado para envio ao sistema.")
-
-                else:
-                    st.warning("⚠️ Nenhum formulário foi salvo ainda.")
-                    st.session_state['consolidar'] = False
+                        if estrutura['dados_permanentes']:
+                            st.markdown("**Dados Permanentes (API):**")
+                            for arq in estrutura['dados_permanentes']:
+                                st.write(f"  🔄 {arq['nome']} ({get_tamanho_legivel(arq['tamanho'])})")
+                        
+                        if estrutura['calculos']:
+                            st.markdown("**Cálculos Realizados:**")
+                            for arq in estrutura['calculos']:
+                                st.write(f"  💧 {arq['nome']} ({get_tamanho_legivel(arq['tamanho'])})")
+                        
+                        if estrutura['formularios']['criticidade']:
+                            st.markdown("**Formulários - Criticidade:**")
+                            for arq in estrutura['formularios']['criticidade']:
+                                st.write(f"  📋 {arq['nome']} ({get_tamanho_legivel(arq['tamanho'])})")
+                        
+                        if estrutura['formularios']['outros']:
+                            st.markdown("**Formulários - Outros:**")
+                            for arq in estrutura['formularios']['outros']:
+                                st.write(f"  📝 {arq['nome']} ({get_tamanho_legivel(arq['tamanho'])})")
 
     else: # se não possui nenhum formulario para aquela unidade vai aparecer essa mensagem
         st.info("ℹ️ Nenhum formulário aplicável para a unidade selecionada com as configurações atuais.")
