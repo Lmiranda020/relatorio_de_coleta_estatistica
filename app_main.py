@@ -1510,43 +1510,40 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                 # Cole isso no seu arquivo principal, ANTES da linha:
                 # debig para ver os formulario que traz da api e quais estão sendo salvo na memoria do streamlit
 
-                st.markdown("### 🔍 DEBUG - Formulários na Memória (ANTES da Tratativa)")
-                formularios_data_antes = st.session_state.get('formularios_data', {})
-                st.write(f"**Total ANTES:** {len(formularios_data_antes)} formulários")
-                for nome in formularios_data_antes.keys():
-                    qtd = len(formularios_data_antes[nome])
-                    st.write(f"- `{nome}` ({qtd} registros)")
+                # st.markdown("### 🔍 DEBUG - Formulários na Memória")
+                # formularios_data = st.session_state.get('formularios_data', {})
+
+                # st.write(f"**Total:** {len(formularios_data)} formulários")
+
+                # for nome in formularios_data.keys():
+                #     st.write(f"- `{nome}`")
 
                 st.markdown("---")
                 # PASSO 2: Executar tratativa de criticidade
-                # EXECUTA A TRATATIVA (que já faz tudo: de-para + filtros + salva no session_state)
                 resultado_tratativa_criticidade_api = tratativa_criticidade_api(OUTPUT_DIR, competencia_normalizada)
                 
                 if resultado_tratativa_criticidade_api:
-                    st.success("✅ Tratativa de criticidade concluída")
-                    
-                    # *** REMOVIDO: Não recarrega mais o arquivo principal! ***
-                    # A tratativa_criticidade_api() já salvou os 3 arquivos filtrados no session_state
-                    
-                    st.markdown("### 🔍 DEBUG - Formulários na Memória (DEPOIS da Tratativa)")
-                    formularios_data_depois = st.session_state.get('formularios_data', {})
-                    st.write(f"**Total DEPOIS:** {len(formularios_data_depois)} formulários")
-                    
-                    # Mostra especialmente os de criticidade
-                    st.markdown("**📋 Formulários de Criticidade:**")
-                    for nome in formularios_data_depois.keys():
-                        if 'Criticidade' in nome or 'Area_Criticidade' in nome:
-                            qtd = len(formularios_data_depois[nome])
-                            # Mostra uma amostra da coluna Ponderação
-                            ponderacoes_unicas = formularios_data_depois[nome]['Ponderação'].unique()
-                            st.write(f"- `{nome}` ({qtd} registros)")
-                            st.write(f"  Ponderações: {list(ponderacoes_unicas)[:3]}...")  # Mostra até 3
-                else:
-                    st.error("❌ Erro na tratativa de criticidade")
-                    st.session_state['consolidar'] = False
-                    st.stop()
-                
-                st.markdown("---")
+                    st.info("✅ Tratativa de criticidade concluída")
+
+                    # PASSO 3: RECARREGAR APENAS A VERSÃO ATUALIZADA
+                    arquivo_criticidade = os.path.join(OUTPUT_DIR, f"Area_Criticidade_API_{competencia_normalizada}.csv")
+
+                    if os.path.exists(arquivo_criticidade):
+                        try:
+                            df_criticidade_atualizado = pd.read_csv(arquivo_criticidade, sep=';')
+                            # Valida que a ponderação foi realmente atualizada
+                            ponderacoes_preenchidas = df_criticidade_atualizado['Ponderação'].notna().sum()
+                            
+                            if ponderacoes_preenchidas > 0:
+                                # Adiciona APENAS a versão atualizada ao session_state
+                                st.session_state['formularios_data']['Area_Criticidade_API'] = df_criticidade_atualizado
+                            else:
+                                st.warning("⚠️ Arquivo de criticidade não possui ponderações atualizadas")
+                        except Exception as e:
+                            st.error(f"Erro ao recarregar dados de criticidade: {e}")
+
+                    else:
+                        st.warning(f"⚠️ Arquivo de criticidade não encontrado: {arquivo_criticidade}")
 
                     
                 if st.session_state.get('consolidar', False) and resultado_tratativa_criticidade_api:
