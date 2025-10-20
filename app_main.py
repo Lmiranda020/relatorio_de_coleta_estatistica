@@ -1609,52 +1609,51 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                         else:
                             st.info("✏️ Dados de criticidade preenchidos manualmente - usando as 3 versões")
 
-                        # === PROCESSAMENTO DOS FORMULÁRIOS (OCULTO EM EXPANDER) ===
-                        with st.expander("🔍 Ver detalhes do processamento", expanded=False):
-                            st.markdown("#### 📋 Processando formulários...")
+                        
+                        st.markdown("#### 📋 Processando formulários...")
 
-                            for nome, df in st.session_state['formularios_data'].items():
-                                # Pula os formulários da lista de ignorados
-                                if nome in formularios_a_ignorar:
-                                    st.info(f"  ⏭️ Pulando: {nome}")
-                                    continue
-                                
-                                df_limpo = df.copy()
-                                df_limpo = df_limpo[df_limpo['Quantidade'].astype(str) != "0"].copy()
-                                
-                                if not df_limpo.empty:
-                                    dfs_para_consolidar.append(df_limpo)
-                                    formularios_consolidados.append(nome)
-                                    st.success(f"  ✅ Adicionado: {nome} ({len(df_limpo)} registros)")
-                                else:
-                                    st.warning(f"  ⚠️ Sem dados válidos: {nome}")
+                        for nome, df in st.session_state['formularios_data'].items():
+                            # Pula os formulários da lista de ignorados
+                            if nome in formularios_a_ignorar:
+                                st.info(f"  ⏭️ Pulando: {nome}")
+                                continue
+                            
+                            df_limpo = df.copy()
+                            df_limpo = df_limpo[df_limpo['Quantidade'].astype(str) != "0"].copy()
+                            
+                            if not df_limpo.empty:
+                                dfs_para_consolidar.append(df_limpo)
+                                formularios_consolidados.append(nome)
+                                st.success(f"  ✅ Adicionado: {nome} ({len(df_limpo)} registros)")
+                            else:
+                                st.warning(f"  ⚠️ Sem dados válidos: {nome}")
 
-                            # === ADICIONA CÁLCULO DE ÁGUA ===
-                            st.markdown("#### 💧 Processando cálculo de água...")
+                        # === ADICIONA CÁLCULO DE ÁGUA ===
+                        st.markdown("#### 💧 Processando cálculo de água...")
 
-                            if st.session_state.get('resultado_calculo_agua') is not None:
-                                df_agua = st.session_state['resultado_calculo_agua'].copy()
-                                df_agua = df_agua[df_agua['Quantidade'] != 0].copy()
-                                
-                                if not df_agua.empty:
-                                    df_agua['Quantidade'] = df_agua['Quantidade'].apply(lambda x: f"{x:.2f}".replace(".", ","))
-                                    dfs_para_consolidar.append(df_agua)
-                                    formularios_consolidados.append("Consumo_Agua")
-                                    st.success(f"  ✅ Água: {len(df_agua)} registros")
-                                else:
-                                    st.warning("  ⚠️ Dados de água sem registros válidos")
+                        if st.session_state.get('resultado_calculo_agua') is not None:
+                            df_agua = st.session_state['resultado_calculo_agua'].copy()
+                            df_agua = df_agua[df_agua['Quantidade'] != 0].copy()
+                            
+                            if not df_agua.empty:
+                                df_agua['Quantidade'] = df_agua['Quantidade'].apply(lambda x: f"{x:.2f}".replace(".", ","))
+                                dfs_para_consolidar.append(df_agua)
+                                formularios_consolidados.append("Consumo_Agua")
+                                st.success(f"  ✅ Água: {len(df_agua)} registros")
+                            else:
+                                st.warning("  ⚠️ Dados de água sem registros válidos")
 
-                            if st.session_state.get('df_agua_quente_final') is not None:
-                                df_agua_quente_final = st.session_state['df_agua_quente_final'].copy()
-                                df_agua_quente_final = df_agua_quente_final[df_agua_quente_final['Quantidade'] != 0].copy()
-                                
-                                if not df_agua_quente_final.empty:
-                                    df_agua_quente_final['Quantidade'] = df_agua_quente_final['Quantidade'].apply(lambda x: f"{x:.2f}".replace(".", ","))
-                                    dfs_para_consolidar.append(df_agua_quente_final)
-                                    formularios_consolidados.append("Consumo_Agua_Quente")
-                                    st.success(f"  ✅ Água Quente: {len(df_agua_quente_final)} registros")
-                                else:
-                                    st.warning("  ⚠️ Dados de água quente sem registros válidos")
+                        if st.session_state.get('df_agua_quente_final') is not None:
+                            df_agua_quente_final = st.session_state['df_agua_quente_final'].copy()
+                            df_agua_quente_final = df_agua_quente_final[df_agua_quente_final['Quantidade'] != 0].copy()
+                            
+                            if not df_agua_quente_final.empty:
+                                df_agua_quente_final['Quantidade'] = df_agua_quente_final['Quantidade'].apply(lambda x: f"{x:.2f}".replace(".", ","))
+                                dfs_para_consolidar.append(df_agua_quente_final)
+                                formularios_consolidados.append("Consumo_Agua_Quente")
+                                st.success(f"  ✅ Água Quente: {len(df_agua_quente_final)} registros")
+                            else:
+                                st.warning("  ⚠️ Dados de água quente sem registros válidos")
                         
                         # Mensagem resumida fora do expander
                         st.info(f"✅ Processamento concluído: {len(formularios_consolidados)} fonte(s) de dados identificadas")
