@@ -1596,7 +1596,7 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                         ]
 
                         # === REGRA 1: Se vieram da API, ignorar os manuais ===
-                        formularios_a_ignorar = ["Produção", "Area_Criticidade_API"]  # Sempre ignora Produção e criticidade para usar os 3 filtrados
+                        formularios_a_ignorar = ["Produção", "Area_Criticidade_API", "Nº de Colaboradores (Médicos + Não Médicos)"]  # Sempre ignora Produção e criticidade para usar os 3 filtrados
 
                         if dados_criticidade_vieram_da_api:
                             st.info("🔄 Dados de criticidade vieram da API - usando as 3 versões filtradas")
@@ -1610,14 +1610,6 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                             # Pula os formulários da lista de ignorados
                             if nome in formularios_a_ignorar:
                                 st.info(f"  ⏭️ Pulando: {nome}")
-                                continue
-                            
-                            # Verifica se é um dos formulários de criticidade manuais
-                            eh_criticidade_manual = nome in formularios_criticidade_manuais
-                            
-                            # Se vieram da API, não processa os manuais
-                            if dados_criticidade_vieram_da_api and eh_criticidade_manual:
-                                st.info(f"  ⏭️ Ignorando versão manual: {nome}")
                                 continue
                             
                             df_limpo = df.copy()
