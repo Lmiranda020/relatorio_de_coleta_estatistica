@@ -1649,31 +1649,6 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                             else:
                                 st.warning("  ⚠️ Dados de água quente sem registros válidos")
 
-                        # === ADICIONA CRITICIDADE DA API (se for o caso) ===
-                        if dados_criticidade_vieram_da_api:
-                            st.markdown("#### 🔄 Processando criticidade da API...")
-                            
-                            if 'Area_Criticidade_API' in st.session_state['formularios_data']:
-                                df_criticidade = st.session_state['formularios_data']['Area_Criticidade_API'].copy()
-                                df_criticidade = df_criticidade[df_criticidade['Quantidade'].astype(str) != "0"].copy()
-                                
-                                if not df_criticidade.empty:
-                                    # Validação: verifica se tem ponderação preenchida
-                                    ponderacoes_ok = df_criticidade['Ponderação'].notna().sum()
-                                    ponderacoes_vazias = df_criticidade['Ponderação'].isna().sum()
-                                    
-                                    if ponderacoes_ok > 0:
-                                        dfs_para_consolidar.append(df_criticidade)
-                                        formularios_consolidados.append("Area_Criticidade_API")
-                                        st.success(f"  ✅ Criticidade API: {len(df_criticidade)} registros")
-                                        
-                                        if ponderacoes_vazias > 0:
-                                            st.warning(f"  ⚠️ {ponderacoes_vazias} ponderações vazias detectadas")
-                                    else:
-                                        st.error("  ❌ Area_Criticidade_API sem ponderação - PULADO")
-                                else:
-                                    st.info("  ℹ️ Area_Criticidade_API sem dados válidos")
-
                         # === CONSOLIDAÇÃO FINAL ===
                         st.markdown("---")
                         st.markdown("#### 🎯 Gerando arquivo consolidado...")
