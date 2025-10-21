@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
-from api.api_competencia import get_competencias
+from api.api_competencia import get_competencias, carregar_tokens_exportacao
 from api.api_dados_estatisticas import get_dados_permanentes
 
 def formatar_competencia_payload(ano, mes):
@@ -132,8 +132,8 @@ def buscar_unidade_id_e_token(unidade_usuario): #crio uma função para buscar o
     """
     try:
         # Carrega dados das unidades (mesmo arquivo usado na API de competências)
-        from config.constants import TOKEN_UNIDADES_EXPORTACAO_DF
-        df_unidades = TOKEN_UNIDADES_EXPORTACAO_DF
+        from config.constants import get_token_unidades_exportacao
+        df_unidades = carregar_tokens_exportacao()
         
         # Busca a unidade que contém o nome do usuário
         unidade_match = df_unidades[ #verifico na coluna nome, se algum contem o nome da unidade do usuário e retorno para a variavel unidade_match
@@ -358,7 +358,7 @@ def converter_dados_para_dataframe_sem_filtro_criticidade(dados_formulario, nome
 def salvar_dados_permanentes_individuais(dados_filtrados, competencia_selecionada, unidade, output_dir): #função para salvar os dados permanentes em arquivos individuais
     """
     Salva dados permanentes em arquivos individuais
-    """
+    """  
     arquivos_salvos = [] #crio uma lista vazia para guardar os nomes dos arquivos salvos
     
     try:
@@ -383,29 +383,32 @@ def salvar_dados_permanentes_individuais(dados_filtrados, competencia_selecionad
                     df.to_csv(caminho_arquivo, index=False, encoding="utf-8-sig", sep=";")
                     arquivos_salvos.append(caminho_arquivo)
                     
-                    # *** CORREÇÃO PRINCIPAL ***
-                    # Inicializar formularios_data se não existir
+                    # *** SALVAR NO SESSION_STATE APENAS O ARQUIVO PRINCIPAL ***
+                    # Este arquivo será processado pela tratativa_criticidade_api
                     if 'formularios_data' not in st.session_state:
                         st.session_state['formularios_data'] = {}
                     
-                    # Lista CORRIGIDA dos três formulários de criticidade
+                    # Salva APENAS o arquivo principal (será processado depois)
+                    st.session_state['formularios_data']['Area_Criticidade_API'] = df.copy()
+                    
+                    # Lista dos três formulários de criticidade
                     formularios_criticidade = [
                         "Área (m²) x Nível de Criticidade (Área Crítica - I)",
                         "Área (m²) x Nível de Criticidade (Área Semi Crítica)", 
                         "Área (m²) x Nível de Criticidade (Área Não Crítica - I)"
                     ]
                     
-                    # Marcar todos os três como preenchidos com o mesmo DataFrame
-                    for form_criticidade in formularios_criticidade:
-                        st.session_state['formularios_data'][form_criticidade] = df.copy()
+                    # *** IMPORTANTE: NÃO salvar os 3 arquivos aqui ***
+                    # Eles serão criados pela função tratativa_criticidade_api
+                    # que fará o de-para e o filtro correto
                     
                     st.success(f"Arquivo único de criticidade salvo: {nome_arquivo} ({len(df)} registros)")
-                    st.success(f"✅ Marcados como processados: {len(formularios_criticidade)} formulários de criticidade")
+                    st.info(f"⚠️ Os 3 arquivos específicos serão criados após aplicar o de-para")
                     
-                    # Listar quais foram marcados
-                    for form in formularios_criticidade:
-                        st.info(f"• {form}")
-                
+                    # Listar quais serão criados depois
+                    with st.expander("📋 Arquivos que serão criados pela tratativa"):
+                        for form in formularios_criticidade:
+                            st.write(f"• {form}")
             else:
                     
                 # Converte para DataFrame, se há dados, para isso chama a função que criei acima, passo o nome do formulário e os dados
@@ -455,6 +458,7 @@ def processar_dados_permanentes_completo():
         formularios_permanentes.append(formularios_para_add)
         competencia_selecionada = st.session_state.get('competencia_usuario', '')
         unidade_usuario = st.session_state.get('unidade_usuario', '')
+        # aqui temos a parte do diretorio, será que está atualizado?
         output_dir = st.session_state.get('output_dir', 'formularios_preenchidos')
         
         if not all([formularios_permanentes, competencia_selecionada, unidade_usuario]): #se alguma dessas variaveis estiver vazia
