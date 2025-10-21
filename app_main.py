@@ -1498,226 +1498,221 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
             st.markdown("---") # cria uma linha 
 
             # === CONSOLIDAÇÃO (se solicitada) ===
-            if st.session_state.get('consolidar', False):
-                
-                # 🔥 NOVO: EXECUTAR TRATATIVA DE CRITICIDADE PRIMEIRO
-                st.markdown("### 🔧 Pré-processamento dos Dados")
-                
+            if st.session_state.get('consolidar', False): # ele verifica se existi esse consolidar na memoria
                 from utils.tratativa_criticidade_api import tratativa_criticidade_api
+
+                # # *** PASSO 1: REMOVER VERSÃO ANTIGA DO SESSION_STATE ***
+                # # Remove a versão desatualizada ANTES da tratativa
+                # if 'Area_Criticidade_API' in st.session_state.get('formularios_data', {}):
+                #     del st.session_state['formularios_data']['Area_Criticidade_API']
                 
-                with st.spinner("Aplicando tratativa de criticidade..."):
-                    resultado_tratativa = tratativa_criticidade_api(OUTPUT_DIR, competencia_normalizada)
+
+                # Cole isso no seu arquivo principal, ANTES da linha:
+                # debig para ver os formulario que traz da api e quais estão sendo salvo na memoria do streamlit
+
+                # st.markdown("### 🔍 DEBUG - Formulários na Memória")
+                # formularios_data = st.session_state.get('formularios_data', {})
+
+                # st.write(f"**Total:** {len(formularios_data)} formulários")
+
+                # for nome in formularios_data.keys():
+                #     st.write(f"- `{nome}`")
+
+                # PASSO 2: Executar tratativa de criticidade
+                resultado_tratativa_criticidade_api = tratativa_criticidade_api(OUTPUT_DIR, competencia_normalizada)
                 
-                if not resultado_tratativa:
-                    st.error("❌ Falha na tratativa de criticidade - consolidação cancelada")
-                    st.session_state['consolidar'] = False
-                    st.stop()
-                
-                st.success("✅ Tratativa de criticidade concluída com sucesso!")
-                
-                # ===================================================================
-                # AGORA SIM: CONSOLIDAR COM OS DADOS ATUALIZADOS
-                # ===================================================================
-                
-                st.markdown("---")
-                st.markdown("## 📊 Consolidação Final")
-                
-                dados_formularios = st.session_state.get('formularios_data', {})
+                if resultado_tratativa_criticidade_api:
+                    st.info("✅ Tratativa de criticidade concluída")
 
-                # Verifica pendências
-                formularios_manuais_pendentes = [f for f in formularios_para_unidade if f not in dados_formularios]
-                api_pendente = (
-                    len(formularios_permanentes_para_API) > 0 and 
-                    not st.session_state.get('dados_permanentes_processados', False)
-                )
-                calculo_agua_pendente = not st.session_state.get('calculo_agua_realizado', False)
-                
-                # Verificações em ordem de prioridade
-                if formularios_manuais_pendentes:
-                    st.warning(f"⚠️ Formulários manuais pendentes: {', '.join(formularios_manuais_pendentes)}")
-                    st.session_state['consolidar'] = False
-                    st.info("Complete todos os formulários antes de consolidar.")
-                    
-                elif api_pendente:
-                    st.warning("⚠️ Dados permanentes ainda não foram processados")
-                    st.session_state['consolidar'] = False
-                    st.info("Processe os dados permanentes antes de consolidar.")
-                    
-                elif calculo_agua_pendente:
-                    st.warning("⚠️ Cálculo de água ainda não foi realizado")
-                    st.session_state['consolidar'] = False
-                    st.info("Realize o cálculo de consumo de água antes de consolidar.")
-                    
-                elif dados_formularios:
-                    st.success("✅ Todos os pré-requisitos foram atendidos. Iniciando consolidação...")
-                    
-                    # 🔥 DEBUG: Verificar se Area_Criticidade_API está atualizado
-                    st.markdown("#### 🔍 Verificando dados de criticidade...")
-                    
-                    if 'Area_Criticidade_API' in dados_formularios:
-                        df_criticidade_debug = dados_formularios['Area_Criticidade_API']
-                        
-                        # Conta quantas ponderações foram atualizadas
-                        ponderacoes_atualizadas = df_criticidade_debug[
-                            df_criticidade_debug['Ponderação'].str.contains(
-                                'Crítica|Semi Crítica|Não Crítica', 
-                                case=False, 
-                                na=False
-                            )
-                        ]
-                        
-                        if len(ponderacoes_atualizadas) > 0:
-                            st.success(f"✅ {len(ponderacoes_atualizadas)} registros com ponderação atualizada")
-                        else:
-                            st.error("❌ ERRO: Ponderações NÃO foram atualizadas!")
-                            st.error("A consolidação usará dados incorretos. Abortando...")
-                            st.session_state['consolidar'] = False
-                            st.stop()
-                        
-                        # Mostra amostra
-                        with st.expander("👀 Ver amostra das ponderações atualizadas"):
-                            st.dataframe(ponderacoes_atualizadas[['Centro de Custo', 'Ponderação']].head(10))
-                    
-                    # CONSOLIDAR POR ORDEM DE PRIORIDADE
-                    dfs_para_consolidar = []
-                    formularios_consolidados = []
+                    # PASSO 3: RECARREGAR APENAS A VERSÃO ATUALIZADA
+                    arquivo_criticidade = os.path.join(OUTPUT_DIR, f"Area_Criticidade_API_{competencia_normalizada}.csv")
 
-                    # === REGRA: Identificar origem dos dados de criticidade ===
-                    dados_criticidade_vieram_da_api = 'Area_Criticidade_API' in st.session_state['formularios_data']
-
-                    # Lista de formulários de criticidade MANUAIS
-                    formularios_criticidade_manuais = [
-                        "Área (m²) x Nível de Criticidade (Área Crítica - I)",
-                        "Área (m²) x Nível de Criticidade (Área Semi Crítica)",
-                        "Área (m²) x Nível de Criticidade (Área Não Crítica - I)"
-                    ]
-
-                    # Formulários que sempre são ignorados na consolidação
-                    formularios_a_ignorar = ["Produção", "Area_Criticidade_API", "Nº de Colaboradores (Médicos + Não Médicos)"]
-
-                    if dados_criticidade_vieram_da_api:
-                        st.info("🔄 Dados de criticidade vieram da API - usando as 3 versões filtradas")
-                    else:
-                        st.info("✏️ Dados de criticidade preenchidos manualmente - usando as 3 versões")
-
-                    # === PROCESSAMENTO DOS FORMULÁRIOS ===
-                    st.markdown("#### 📋 Processando formulários...")
-
-                    for nome, df in st.session_state['formularios_data'].items():
-                        # Pula os formulários da lista de ignorados
-                        if nome in formularios_a_ignorar:
-                            st.info(f"  ⏭️ Pulando: {nome}")
-                            continue
-                        
-                        df_limpo = df.copy()
-                        df_limpo = df_limpo[df_limpo['Quantidade'].astype(str) != "0"].copy()
-                        
-                        if not df_limpo.empty:
-                            dfs_para_consolidar.append(df_limpo)
-                            formularios_consolidados.append(nome)
-                            st.success(f"  ✅ Adicionado: {nome} ({len(df_limpo)} registros)")
-                        else:
-                            st.warning(f"  ⚠️ Sem dados válidos: {nome}")
-
-                    # === ADICIONA CÁLCULO DE ÁGUA ===
-                    st.markdown("#### 💧 Processando cálculo de água...")
-
-                    if st.session_state.get('resultado_calculo_agua') is not None:
-                        df_agua = st.session_state['resultado_calculo_agua'].copy()
-                        df_agua = df_agua[df_agua['Quantidade'] != 0].copy()
-                        
-                        if not df_agua.empty:
-                            df_agua['Quantidade'] = df_agua['Quantidade'].apply(lambda x: f"{x:.2f}".replace(".", ","))
-                            dfs_para_consolidar.append(df_agua)
-                            formularios_consolidados.append("Consumo_Agua")
-                            st.success(f"  ✅ Água: {len(df_agua)} registros")
-
-                    if st.session_state.get('df_agua_quente_final') is not None:
-                        df_agua_quente_final = st.session_state['df_agua_quente_final'].copy()
-                        df_agua_quente_final = df_agua_quente_final[df_agua_quente_final['Quantidade'] != 0].copy()
-                        
-                        if not df_agua_quente_final.empty:
-                            df_agua_quente_final['Quantidade'] = df_agua_quente_final['Quantidade'].apply(lambda x: f"{x:.2f}".replace(".", ","))
-                            dfs_para_consolidar.append(df_agua_quente_final)
-                            formularios_consolidados.append("Consumo_Agua_Quente")
-                            st.success(f"  ✅ Água Quente: {len(df_agua_quente_final)} registros")
-
-                    # === CONSOLIDAÇÃO FINAL ===
-                    st.markdown("---")
-                    st.markdown("#### 🎯 Gerando arquivo consolidado...")
-
-                    if dfs_para_consolidar:
-                        df_final = pd.concat(dfs_para_consolidar, ignore_index=True)
-                        
-                        # Caminho para salvar
-                        arquivo_consolidado = os.path.join(
-                            OUTPUT_DIR, 
-                            f"CONSOLIDADO_{unidade}_{competencia}.csv".replace("/", "-").replace(" ", "_")
-                        )
-                        
+                    if os.path.exists(arquivo_criticidade):
                         try:
-                            # Filtros finais
-                            tamanho_antes_filtro = len(df_final)
-                            df_final = df_final[df_final['Quantidade'].astype(str) != "0"].copy()
-                            df_final = df_final[df_final['Ponderação'] != "Nº de Colaboradores (Médicos + Não Médicos)"]
-                            tamanho_depois_filtro = len(df_final)
+                            df_criticidade_atualizado = pd.read_csv(arquivo_criticidade, sep=';')
+                            # Valida que a ponderação foi realmente atualizada
+                            ponderacoes_preenchidas = df_criticidade_atualizado['Ponderação'].notna().sum()
                             
-                            if tamanho_antes_filtro != tamanho_depois_filtro:
-                                st.info(f"🧹 Filtros aplicados: {tamanho_antes_filtro - tamanho_depois_filtro} registros removidos")
-                            
-                            # 🔥 VALIDAÇÃO FINAL: Verifica se há registros com ponderação atualizada
-                            registros_criticidade_atualizados = df_final[
-                                df_final['Ponderação'].str.contains(
-                                    'Crítica|Semi Crítica|Não Crítica', 
-                                    case=False, 
-                                    na=False
-                                )
-                            ]
-                            
-                            if len(registros_criticidade_atualizados) == 0:
-                                st.error("❌ ERRO CRÍTICO: Nenhum registro de criticidade com ponderação atualizada!")
-                                st.error("A consolidação NÃO será salva para evitar dados incorretos.")
-                                st.session_state['consolidar'] = False
-                                st.stop()
-                            
-                            # Salva o arquivo
-                            df_final.to_csv(arquivo_consolidado, index=False, encoding="utf-8-sig", sep=";")
-                            
-                            st.success("✅ Consolidação concluída com sucesso!")
-                            
-                            # === RESUMO DETALHADO ===
-                            st.markdown("### 📈 Resumo da Consolidação")
-                            
-                            col1, col2, col3, col4 = st.columns(4)
-                            with col1:
-                                st.metric("Formulários", len(formularios_consolidados))
-                            with col2:
-                                st.metric("Registros", len(df_final))
-                            with col3:
-                                st.metric("Criticidade ✅", len(registros_criticidade_atualizados))
-                            with col4:
-                                origem_criticidade = "API" if dados_criticidade_vieram_da_api else "Manual"
-                                st.metric("Origem", origem_criticidade)
-                            
-                            st.info(f"📁 Arquivo salvo: {os.path.basename(arquivo_consolidado)}")
-                            
-                            # Lista dos formulários consolidados
-                            with st.expander("📋 Formulários consolidados neste arquivo"):
-                                for i, form in enumerate(formularios_consolidados, 1):
-                                    st.write(f"{i}. {form}")
-                            
-                            # Preview dos registros de criticidade
-                            with st.expander("✅ Ver registros de criticidade atualizados"):
-                                st.dataframe(registros_criticidade_atualizados[['Centro de Custo', 'Ponderação', 'Quantidade']].head(20))
-                            
-                        except Exception as consolidate_error:
-                            st.error(f"❌ Erro ao salvar arquivo consolidado: {str(consolidate_error)}")
-                            st.exception(consolidate_error)
-                            st.session_state['consolidar'] = False
+                            if ponderacoes_preenchidas > 0:
+                                # Adiciona APENAS a versão atualizada ao session_state
+                                st.session_state['formularios_data']['Area_Criticidade_API'] = df_criticidade_atualizado
+                            else:
+                                st.warning("⚠️ Arquivo de criticidade não possui ponderações atualizadas")
+                        except Exception as e:
+                            st.error(f"Erro ao recarregar dados de criticidade: {e}")
 
                     else:
-                        st.error("❌ Nenhum dado disponível para consolidação")
+                        st.warning(f"⚠️ Arquivo de criticidade não encontrado: {arquivo_criticidade}")
+
+                    
+                if st.session_state.get('consolidar', False) and resultado_tratativa_criticidade_api:
+                    # se a condição for atendida ou seja se for TRUE:
+                    st.markdown("---") # cria uma linha 
+                    st.markdown("## 📊 Consolidação Final") # cria esse texto
+                    
+                    #NOVA VALIDAÇÃO - adicionar antes do if st.session_state['formularios_data']:
+                    dados_formularios = st.session_state.get('formularios_data', {})
+
+                    # Verifica pendências - NOVA LÓGICA incluindo cálculo de água
+                    formularios_manuais_pendentes = [f for f in formularios_para_unidade if f not in dados_formularios]
+                    api_pendente = (
+                        len(formularios_permanentes_para_API) > 0 and 
+                        not st.session_state.get('dados_permanentes_processados', False)
+                    )
+                    calculo_agua_pendente = not st.session_state.get('calculo_agua_realizado', False)
+                    
+                    # Verificações em ordem de prioridade
+                    if formularios_manuais_pendentes:
+                        st.warning(f"⚠️ Formulários manuais pendentes: {', '.join(formularios_manuais_pendentes)}")
                         st.session_state['consolidar'] = False
+                        st.info("Complete todos os formulários antes de consolidar.")
+                        
+                    elif api_pendente:
+                        st.warning("⚠️ Dados permanentes ainda não foram processados")
+                        st.session_state['consolidar'] = False
+                        st.info("Processe os dados permanentes antes de consolidar.")
+                        
+                    elif calculo_agua_pendente:
+                        st.warning("⚠️ Cálculo de água ainda não foi realizado")
+                        st.session_state['consolidar'] = False
+                        st.info("Realize o cálculo de consumo de água antes de consolidar.")
+                        
+                    elif dados_formularios:
+                        st.success("✅ Todos os pré-requisitos foram atendidos. Iniciando consolidação...")
+                        
+                        # CONSOLIDAR POR ORDEM DE PRIORIDADE
+                        dfs_para_consolidar = []
+                        formularios_consolidados = []  # Para rastreamento
+
+                        # === NOVA LÓGICA: Identificar origem dos dados de criticidade ===
+                        dados_criticidade_vieram_da_api = 'Area_Criticidade_API' in st.session_state['formularios_data']
+
+                        # Lista de formulários de criticidade MANUAIS
+                        formularios_criticidade_manuais = [
+                            "Área (m²) x Nível de Criticidade (Área Crítica - I)",
+                            "Área (m²) x Nível de Criticidade (Área Semi Crítica)",
+                            "Área (m²) x Nível de Criticidade (Área Não Crítica - I)"
+                        ]
+
+                        # === REGRA 1: Se vieram da API, ignorar os manuais ===
+                        formularios_a_ignorar = ["Produção", "Area_Criticidade_API", "Nº de Colaboradores (Médicos + Não Médicos)"]  # Sempre ignora Produção e criticidade para usar os 3 filtrados
+
+                        if dados_criticidade_vieram_da_api:
+                            st.info("🔄 Dados de criticidade vieram da API - usando as 3 versões filtradas")
+                        else:
+                            st.info("✏️ Dados de criticidade preenchidos manualmente - usando as 3 versões")
+
+                        # === PROCESSAMENTO DOS FORMULÁRIOS ===
+                        st.markdown("#### 📋 Processando formulários...")
+
+                        for nome, df in st.session_state['formularios_data'].items():
+                            # Pula os formulários da lista de ignorados
+                            if nome in formularios_a_ignorar:
+                                st.info(f"  ⏭️ Pulando: {nome}")
+                                continue
+                            
+                            df_limpo = df.copy()
+                            df_limpo = df_limpo[df_limpo['Quantidade'].astype(str) != "0"].copy()
+                            
+                            if not df_limpo.empty:
+                                dfs_para_consolidar.append(df_limpo)
+                                formularios_consolidados.append(nome)
+                                st.success(f"  ✅ Adicionado: {nome} ({len(df_limpo)} registros)")
+                            else:
+                                st.warning(f"  ⚠️ Sem dados válidos: {nome}")
+
+                        # === ADICIONA CÁLCULO DE ÁGUA ===
+                        st.markdown("#### 💧 Processando cálculo de água...")
+
+                        if st.session_state.get('resultado_calculo_agua') is not None:
+                            df_agua = st.session_state['resultado_calculo_agua'].copy()
+                            df_agua = df_agua[df_agua['Quantidade'] != 0].copy()
+                            
+                            if not df_agua.empty:
+                                df_agua['Quantidade'] = df_agua['Quantidade'].apply(lambda x: f"{x:.2f}".replace(".", ","))
+                                dfs_para_consolidar.append(df_agua)
+                                formularios_consolidados.append("Consumo_Agua")
+                                st.success(f"  ✅ Água: {len(df_agua)} registros")
+                            else:
+                                st.warning("  ⚠️ Dados de água sem registros válidos")
+
+                        if st.session_state.get('df_agua_quente_final') is not None:
+                            df_agua_quente_final = st.session_state['df_agua_quente_final'].copy()
+                            df_agua_quente_final = df_agua_quente_final[df_agua_quente_final['Quantidade'] != 0].copy()
+                            
+                            if not df_agua_quente_final.empty:
+                                df_agua_quente_final['Quantidade'] = df_agua_quente_final['Quantidade'].apply(lambda x: f"{x:.2f}".replace(".", ","))
+                                dfs_para_consolidar.append(df_agua_quente_final)
+                                formularios_consolidados.append("Consumo_Agua_Quente")
+                                st.success(f"  ✅ Água Quente: {len(df_agua_quente_final)} registros")
+                            else:
+                                st.warning("  ⚠️ Dados de água quente sem registros válidos")
+
+                        # === CONSOLIDAÇÃO FINAL ===
+                        st.markdown("---")
+                        st.markdown("#### 🎯 Gerando arquivo consolidado...")
+
+                        if dfs_para_consolidar:
+                            df_final = pd.concat(dfs_para_consolidar, ignore_index=True)
+                            
+                            # Caminho para salvar
+                            arquivo_consolidado = os.path.join(
+                                OUTPUT_DIR, 
+                                f"CONSOLIDADO_{unidade}_{competencia}.csv".replace("/", "-").replace(" ", "_")
+                            )
+                            
+                            try:
+                                # Filtros finais
+                                tamanho_antes_filtro = len(df_final)
+                                df_final = df_final[df_final['Quantidade'].astype(str) != "0"].copy()
+                                df_final = df_final[df_final['Ponderação'] != "Nº de Colaboradores (Médicos + Não Médicos)"]
+                                tamanho_depois_filtro = len(df_final)
+                                
+                                if tamanho_antes_filtro != tamanho_depois_filtro:
+                                    st.info(f"🧹 Filtros aplicados: {tamanho_antes_filtro - tamanho_depois_filtro} registros removidos")
+                                
+                                # Salva o arquivo
+                                df_final.to_csv(arquivo_consolidado, index=False, encoding="utf-8-sig", sep=";")
+                                
+                                st.success("✅ Consolidação concluída com sucesso!")
+                                
+                                # === RESUMO DETALHADO ===
+                                st.markdown("### 📈 Resumo da Consolidação")
+                                
+                                col1, col2, col3, col4 = st.columns(4)
+                                with col1:
+                                    st.metric("Formulários", len(formularios_consolidados))
+                                with col2:
+                                    st.metric("Registros", len(df_final))
+                                with col3:
+                                    duplicatas = df_final.duplicated().sum()
+                                    if duplicatas > 0:
+                                        st.metric("Duplicatas", duplicatas, delta="⚠️")
+                                    else:
+                                        st.metric("Duplicatas", 0, delta="✅")
+                                with col4:
+                                    origem_criticidade = "API" if dados_criticidade_vieram_da_api else "Manual"
+                                    st.metric("Criticidade", origem_criticidade)
+                                
+                                st.info(f"📁 Arquivo salvo: {os.path.basename(arquivo_consolidado)}")
+                                
+                                # Lista dos formulários consolidados
+                                with st.expander("📋 Formulários consolidados neste arquivo"):
+                                    for i, form in enumerate(formularios_consolidados, 1):
+                                        st.write(f"{i}. {form}")
+                                
+                                # Preview (opcional, colapsado por padrão)
+                                with st.expander("👀 Ver preview dos dados"):
+                                    st.dataframe(df_final.head(20))
+                                
+                            except Exception as consolidate_error:
+                                st.error(f"❌ Erro ao salvar arquivo consolidado: {str(consolidate_error)}")
+                                st.exception(consolidate_error)
+                                st.session_state['consolidar'] = False
+
+                        else:
+                            st.error("❌ Nenhum dado disponível para consolidação")
+                            st.session_state['consolidar'] = False
                     
                     # === SEÇÃO DE DOWNLOAD PROFISSIONAL ===
                     st.markdown("---")
