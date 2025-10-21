@@ -24,16 +24,18 @@ def tratativa_criticidade_api(output_dir, competencia):
     try:
         de_para_criticidade = pd.read_excel(DEPARA_CRITICIDADE)
         
-        # 🔥 LIMPEZA: Remove espaços extras e normaliza
+        # LIMPEZA: Remove espaços extras e normaliza
         de_para_criticidade['Centro de Custo'] = de_para_criticidade['Centro de Custo'].astype(str).str.strip()
         de_para_criticidade['Nova Ponderação'] = de_para_criticidade['Nova Ponderação'].astype(str).str.strip()
         
         with temp_container.container():
             st.info(f"✅ Arquivo de de-para carregado com {len(de_para_criticidade)} registros")
+
     except FileNotFoundError:
         temp_container.empty()
         st.error(f"Erro: Arquivo de de-para não encontrado: {DEPARA_CRITICIDADE}")
         return False
+    
     except Exception as e:
         temp_container.empty()
         st.error(f"Erro ao carregar arquivo de de-para: {e}")
