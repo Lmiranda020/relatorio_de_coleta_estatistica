@@ -1463,37 +1463,37 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                 else: # se o arquivo do formulario não existir, vai dar esse erro
                     st.error(f"❌ Formulário não encontrado: {caminho}")
 
-            def recarregar_dados_processados(output_dir, competencia):
-                """
-                Recarrega os dados dos arquivos processados para garantir que a consolidação 
-                use as versões mais atualizadas
-                """
-                dados_recarregados = {}
+            # def recarregar_dados_processados(output_dir, competencia):
+            #     """
+            #     Recarrega os dados dos arquivos processados para garantir que a consolidação 
+            #     use as versões mais atualizadas
+            #     """
+            #     dados_recarregados = {}
                 
-                # Lista de arquivos para verificar
-                arquivos_para_verificar = [
-                    f"Area_Criticidade_API_{competencia}.csv",
-                    # Adicione outros arquivos que possam ter sido processados
-                ]
+            #     # Lista de arquivos para verificar
+            #     arquivos_para_verificar = [
+            #         f"Area_Criticidade_API_{competencia}.csv",
+            #         # Adicione outros arquivos que possam ter sido processados
+            #     ]
                 
-                for arquivo in arquivos_para_verificar:
-                    caminho_arquivo = os.path.join(output_dir, arquivo)
-                    if os.path.exists(caminho_arquivo):
-                        try:
-                            df = pd.read_csv(caminho_arquivo, sep=';')
-                            # Mapeia o nome do arquivo para o nome usado na session_state
-                            if 'Area_Criticidade_API' in arquivo:
-                                nome_formulario = 'Area_Criticidade_API'
-                            # Adicione outros mapeamentos conforme necessário
-                            else:
-                                nome_formulario = arquivo.replace('.csv', '').replace(f'_{competencia}', '')
+            #     for arquivo in arquivos_para_verificar:
+            #         caminho_arquivo = os.path.join(output_dir, arquivo)
+            #         if os.path.exists(caminho_arquivo):
+            #             try:
+            #                 df = pd.read_csv(caminho_arquivo, sep=';')
+            #                 # Mapeia o nome do arquivo para o nome usado na session_state
+            #                 if 'Area_Criticidade_API' in arquivo:
+            #                     nome_formulario = 'Area_Criticidade_API'
+            #                 # Adicione outros mapeamentos conforme necessário
+            #                 else:
+            #                     nome_formulario = arquivo.replace('.csv', '').replace(f'_{competencia}', '')
                             
-                            dados_recarregados[nome_formulario] = df
+            #                 dados_recarregados[nome_formulario] = df
                             
-                        except Exception as e:
-                            st.warning(f"Erro ao recarregar {arquivo}: {e}")
+            #             except Exception as e:
+            #                 st.warning(f"Erro ao recarregar {arquivo}: {e}")
                 
-                return dados_recarregados
+            #     return dados_recarregados
             
             st.markdown("---") # cria uma linha 
 
@@ -1506,8 +1506,6 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                 # if 'Area_Criticidade_API' in st.session_state.get('formularios_data', {}):
                 #     del st.session_state['formularios_data']['Area_Criticidade_API']
                 
-
-                # Cole isso no seu arquivo principal, ANTES da linha:
                 # debig para ver os formulario que traz da api e quais estão sendo salvo na memoria do streamlit
 
                 st.markdown("### 🔍 DEBUG - Formulários na Memória")
