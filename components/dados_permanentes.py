@@ -383,15 +383,28 @@ def salvar_dados_permanentes_individuais(dados_filtrados, competencia_selecionad
                     df.to_csv(caminho_arquivo, index=False, encoding="utf-8-sig", sep=";")
                     arquivos_salvos.append(caminho_arquivo)
                     
-                    # Salvar no session_state com chave única
+                    # *** CORREÇÃO PRINCIPAL ***
+                    # Inicializar formularios_data se não existir
                     if 'formularios_data' not in st.session_state:
                         st.session_state['formularios_data'] = {}
                     
-                    # 🔥 SALVAR APENAS COM UMA CHAVE - O FILTRO SERÁ FEITO DEPOIS
-                    st.session_state['formularios_data']['Area_Criticidade_API'] = df.copy()
+                    # Lista CORRIGIDA dos três formulários de criticidade
+                    formularios_criticidade = [
+                        "Área (m²) x Nível de Criticidade (Área Crítica - I)",
+                        "Área (m²) x Nível de Criticidade (Área Semi Crítica)", 
+                        "Área (m²) x Nível de Criticidade (Área Não Crítica - I)"
+                    ]
                     
-                    st.success(f"✅ Arquivo único de criticidade salvo: {nome_arquivo} ({len(df)} registros)")
-                    st.info("⏳ Os filtros por nível de criticidade serão aplicados na próxima etapa")
+                    # Marcar todos os três como preenchidos com o mesmo DataFrame
+                    for form_criticidade in formularios_criticidade:
+                        st.session_state['formularios_data'][form_criticidade] = df.copy()
+                    
+                    st.success(f"Arquivo único de criticidade salvo: {nome_arquivo} ({len(df)} registros)")
+                    st.success(f"✅ Marcados como processados: {len(formularios_criticidade)} formulários de criticidade")
+                    
+                    # Listar quais foram marcados
+                    for form in formularios_criticidade:
+                        st.info(f"• {form}")
                 
             else:
                     
@@ -442,7 +455,7 @@ def processar_dados_permanentes_completo():
         formularios_permanentes.append(formularios_para_add)
         competencia_selecionada = st.session_state.get('competencia_usuario', '')
         unidade_usuario = st.session_state.get('unidade_usuario', '')
-        # aqui temos a parte do diretorio
+        # aqui temos a parte do diretorio, será que está atualizado?
         output_dir = st.session_state.get('output_dir', 'formularios_preenchidos')
         
         if not all([formularios_permanentes, competencia_selecionada, unidade_usuario]): #se alguma dessas variaveis estiver vazia
