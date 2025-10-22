@@ -239,6 +239,17 @@ def criar_zip_simples(output_dir, competencia_normalizada, unidade):
     from io import BytesIO
     import zipfile
     from datetime import datetime
+
+    # Debug para ver os formulários que traz da API e quais estão sendo salvos na memória do Streamlit
+
+    st.markdown("### 🔍 DEBUG - Formulários na Memória")
+    formularios_data = st.session_state.get('formularios_data', {})
+
+    st.write(f"**Total:** {len(formularios_data)} formulários")
+
+    for nome in formularios_data.keys():
+        st.write(f"- `{nome}`")
+
     
     zip_buffer = BytesIO()
     arquivos_adicionados = 0
