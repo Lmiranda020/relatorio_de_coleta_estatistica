@@ -222,3 +222,100 @@ def get_tamanho_legivel(tamanho_bytes):
         if tamanho_bytes < 1024.0:
             return f"{tamanho_bytes:.1f} {unidade}"
         tamanho_bytes /= 1024.0
+
+def criar_zip_simples(output_dir, competencia_normalizada, unidade):
+    """
+    Cria um ZIP simples com todos os arquivos CSV em uma única pasta.
+    Versão simplificada para download obrigatório.
+    
+    Args:
+        output_dir: Diretório com os arquivos
+        competencia_normalizada: Competência no formato MM-AAAA
+        unidade: Nome da unidade
+        
+    Returns:
+        tuple: (BytesIO com o ZIP, quantidade de arquivos)
+    """
+    from io import BytesIO
+    import zipfile
+    from datetime import datetime
+    
+    zip_buffer = BytesIO()
+    arquivos_adicionados = 0
+    
+    try:
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            # Nome da pasta raiz dentro do ZIP
+            pasta_raiz = f"formularios_preenchidos_{competencia_normalizada}"
+            
+            # Percorre todos os arquivos CSV do diretório
+            if os.path.exists(output_dir):
+                for arquivo in os.listdir(output_dir):
+                    if arquivo.endswith('.csv'):
+                        caminho_completo = os.path.join(output_dir, arquivo)
+                        
+                        # Adiciona o arquivo dentro da pasta raiz
+                        zip_file.write(
+                            caminho_completo,
+                            arcname=f"{pasta_raiz}/{arquivo}"
+                        )
+                        arquivos_adicionados += 1
+            
+            # Adiciona arquivo README
+            readme_content = f"""
+╔══════════════════════════════════════════════════════════════╗
+║          RELATÓRIO DE COLETA - CEJAM                         ║
+╚══════════════════════════════════════════════════════════════╝
+
+INFORMAÇÕES DO PACOTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Unidade: {unidade}
+Competência: {competencia_normalizada.replace('_', ' ').replace('-', '/')}
+Data de geração: {datetime.now().strftime('%d/%m/%Y às %H:%M')}
+Total de arquivos: {arquivos_adicionados}
+
+CONTEÚDO DO PACOTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Formulários individuais preenchidos
+✅ Dados permanentes obtidos via API
+✅ Arquivo CONSOLIDADO (pronto para envio ao KPIH)
+✅ Cálculos de consumo de água
+
+INSTRUÇÕES DE USO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. 📤 ENVIAR PARA KPIH:
+   → Use o arquivo que começa com "CONSOLIDADO_"
+   → Este arquivo contém todos os dados organizados
+
+2. 💾 BACKUP:
+   → Mantenha esta pasta compactada como backup
+   → Útil para auditorias e conferências
+
+3. 🔍 CONFERÊNCIA:
+   → Os demais arquivos CSV são os formulários individuais
+   → Use para conferir dados específicos se necessário
+
+DETALHES TÉCNICOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Formato: CSV
+Separador: ; (ponto e vírgula)
+Encoding: UTF-8 com BOM
+Decimal: , (vírgula)
+
+SUPORTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📧 Email: custos@cejam.org.br
+🎫 Sistema de tickets disponível no menu
+
+═══════════════════════════════════════════════════════════════
+Sistema de Coleta de Dados - CEJAM © {datetime.now().year}
+═══════════════════════════════════════════════════════════════
+            """.strip()
+            
+            zip_file.writestr(f"{pasta_raiz}/LEIA-ME.txt", readme_content.encode('utf-8'))
+        
+        zip_buffer.seek(0)
+        return zip_buffer, arquivos_adicionados
+        
+    except Exception as e:
+        raise Exception(f"Erro ao criar ZIP simplificado: {str(e)}")

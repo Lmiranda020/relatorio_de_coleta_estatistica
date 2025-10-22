@@ -45,7 +45,7 @@ except ImportError as e:
     st.warning(f"Módulos de API de centro de custo não encontrados: {e}")
     API_CENTRO_CUSTO_DISPONIVEL = False
 from components.modal_feedback_pos_envio import modal_feedback_sucesso
-from utils.file_utils import criar_zip_formularios, get_tamanho_legivel
+from utils.file_utils import criar_zip_formularios, get_tamanho_legivel, criar_zip_simples
 import zipfile
 from io import BytesIO
 import tempfile
@@ -779,7 +779,7 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                     return len(problemas_encontrados) == 0, problemas_encontrados
                 
                 consolidado_valido, problemas_ponderacao = validar_consolidado_para_envio()
-                envio_habilitado = consolidar_habilitado and st.session_state['consolidar'] and consolidado_valido
+                
 
                 # Botão de envio para KPIH - só habilitado após consolidação
                 # ============================================================================
@@ -787,9 +787,69 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                 # Localização: Por volta da linha 700 do documento 1
                 # ============================================================================
 
-                if st.button("Fazer download dos arquivos", disabled=not st.session_state['consolidar']):
-                    # Lógica para download dos arquivos
-                    pass
+                # Inicializa a flag de download se não existir
+                if 'download_realizado' not in st.session_state:
+                    st.session_state['download_realizado'] = False
+
+                # BOTÃO 3: Download dos Arquivos (habilitado após consolidação)
+                download_habilitado = consolidar_habilitado and st.session_state['consolidar']
+
+                if st.button("📥 Fazer Download dos Arquivos", disabled=not download_habilitado):
+                    if download_habilitado:
+                        try:
+                            st.info("📦 Preparando arquivos para download...")
+                            
+                            # Usa a função simplificada do file_utils
+                            zip_buffer, qtd_arquivos = criar_zip_simples(
+                                OUTPUT_DIR, 
+                                competencia_normalizada, 
+                                unidade
+                            )
+                            
+                            if zip_buffer and qtd_arquivos > 0:
+                                tamanho_zip = get_tamanho_legivel(len(zip_buffer.getvalue()))
+                                nome_zip = f"Relatorio_Coleta_{unidade}_{competencia_normalizada}.zip"
+                                
+                                st.success(f"✅ Pacote pronto com {qtd_arquivos} arquivos ({tamanho_zip})")
+                                
+                                # Download button que marca como realizado
+                                st.download_button(
+                                    label=f"💾 Baixar Pacote Completo",
+                                    data=zip_buffer,
+                                    file_name=nome_zip,
+                                    mime="application/zip",
+                                    use_container_width=True,
+                                    type="primary",
+                                    key="btn_download_arquivos",
+                                    help=f"Download de {qtd_arquivos} arquivos • {tamanho_zip}"
+                                )
+                                
+                                # Marca como download realizado quando o botão é renderizado
+                                st.session_state['download_realizado'] = True
+                                
+                                st.info("💡 Após clicar no download acima, o botão de envio ao KPIH será habilitado")
+                                
+                            else:
+                                st.error("❌ Nenhum arquivo encontrado para download")
+                                
+                        except Exception as e:
+                            st.error(f"❌ Erro ao preparar download: {e}")
+                    else:
+                        if not todos_formularios_prontos:
+                            st.warning("⚠️ Complete todos os formulários primeiro.")
+                        elif not st.session_state['calculo_agua_realizado']:
+                            st.warning("⚠️ Realize o cálculo de água primeiro.")
+                        elif not st.session_state['consolidar']:
+                            st.warning("⚠️ Consolide os dados primeiro.")
+
+                st.markdown("---")
+
+                envio_habilitado = (
+                    consolidar_habilitado and 
+                    st.session_state['consolidar'] and 
+                    st.session_state.get('download_realizado', False) and
+                    consolidado_valido
+                )
 
                 # Botão de envio para KPIH - só habilitado após consolidação
                 if st.button("🚀 Enviar dados para KPIH", disabled=not st.session_state['consolidar']):
@@ -877,7 +937,9 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                             dados_extras_completos = {
                                 **dados_extras_estatisticas,
                                 **dados_extras_producao,
-                                'timestamp_registro_banco': datetime.datetime.now().isoformat()
+                                'timestamp_registro_banco': datetime.datetime.now().isoformat(),
+                                'download_realizado': True,
+                                'download_timestamp': datetime.datetime.now().isoformat()
                             }
                             
                             # Determinar status final
@@ -936,21 +998,21 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                             st.exception(e)
                     
                     else:
-                        # Mensagens de validação
+                        # Mensagens de validação atualizadas
                         if not todos_formularios_prontos:
-                            st.warning("⚠️ Complete todos os formulários primeiro.")
+                            st.warning("⚠️ **Passo 1/4:** Complete todos os formulários")
                         elif not st.session_state['calculo_agua_realizado']:
-                            st.warning("⚠️ Realize o cálculo de água primeiro.")
+                            st.warning("⚠️ **Passo 2/4:** Realize o cálculo de água")
                         elif not st.session_state['consolidar']:
-                            st.warning("⚠️ Consolide os dados primeiro.")
+                            st.warning("⚠️ **Passo 3/4:** Consolide os dados")
+                        elif not st.session_state.get('download_realizado', False):
+                            st.error("⚠️ **Passo 4/4:** Faça o download dos arquivos primeiro!")
+                            st.info("👆 Clique no botão '📥 Fazer Download dos Arquivos' acima")
                         elif not consolidado_valido:
-                            st.error("❌ Dados não podem ser enviados - ponderações em branco detectadas:")
+                            st.error("❌ Dados inválidos detectados:")
                             for problema in problemas_ponderacao:
-                                st.write(f"• {problema['formulario']}: {problema['registros_problematicos']} registro(s) com ponderação vazia")
-                            st.info("💡 Volte aos formulários com problema e corrija as ponderações antes de enviar.")
-                        
-                        if 'unidade_id' not in st.session_state:
-                            st.info("💡 Dica: Execute primeiro o processo de dados permanentes para configurar a unidade.")
+                                st.write(f"• {problema['formulario']}: {problema['registros_problematicos']} erro(s)")
+                            st.info("💡 Corrija os formulários antes de enviar")
 
                 # ============================================================================
                 # EXIBIÇÃO DE RESULTADOS SALVOS (APÓS RERUN)
@@ -1128,7 +1190,7 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                 st.markdown("---")
                 # Status visual dos botões (mantém como está)
                 st.markdown("### 📊 Status do Processo")
-                col1, col2, col3 = st.columns(3)
+                col1, col2, col3, col4 = st.columns(4)
 
                 with col1:
                     if todos_formularios_prontos:
@@ -1147,6 +1209,12 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                         st.success("✅ Consolidado")
                     else:
                         st.info("⏳ Consolidado")
+
+                with col4:
+                    if st.session_state.get('download_realizado', False):
+                        st.success("✅ Download Realizado")
+                    else:
+                        st.info("⏳ Download Pendente")
 
                 adicionar_botao_ajuda_sidebar()
 
@@ -1714,80 +1782,6 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                         else:
                             st.error("❌ Nenhum dado disponível para consolidação")
                             st.session_state['consolidar'] = False
-                    
-                    # === SEÇÃO DE DOWNLOAD PROFISSIONAL ===
-                    st.markdown("---")
-                    st.markdown("### 📥 Download dos Resultados")
-
-                    col_info, col_downloads = st.columns([2, 3])
-
-                    with col_info:
-                        st.info("""
-                        **📦 Pacote Completo (ZIP)**
-                        - Todos os formulários organizados
-                        - Arquivo consolidado
-                        - Dados permanentes da API
-                        - Cálculos realizados
-                        - Arquivo README com instruções
-                        
-                        **📄 Consolidado Individual**
-                        - Arquivo pronto para envio ao KPIH
-                        - Todos os dados em um único CSV
-                        """)
-
-                    with col_downloads:
-                        # Botão 1: Download do Consolidado
-                        st.markdown("#### 🎯 Arquivo Principal")
-                        
-                        try:
-                            with open(arquivo_consolidado, 'rb') as file:
-                                dados_consolidado = file.read()
-                                tamanho_consolidado = get_tamanho_legivel(len(dados_consolidado))
-                                
-                                st.download_button(
-                                    label=f"📄 Baixar Consolidado ({tamanho_consolidado})",
-                                    data=dados_consolidado,
-                                    file_name=os.path.basename(arquivo_consolidado),
-                                    mime="text/csv",
-                                    use_container_width=True,
-                                    help="Arquivo pronto para envio ao KPIH"
-                                )
-                        except Exception as e:
-                            st.error(f"Erro ao preparar consolidado: {e}")
-                        
-                        st.markdown("#### 📦 Pacote Completo")
-                        
-                        # Botão 2: Download do ZIP
-                        try:
-                            zip_buffer, qtd_arquivos = criar_zip_formularios(
-                                OUTPUT_DIR, 
-                                competencia_normalizada, 
-                                unidade
-                            )
-                            
-                            tamanho_zip = get_tamanho_legivel(len(zip_buffer.getvalue()))
-                            nome_zip = f"Relatorio_Coleta_{unidade}_{competencia_normalizada}.zip"
-                            
-                            st.download_button(
-                                label=f"📦 Baixar Tudo ({qtd_arquivos} arquivos • {tamanho_zip})",
-                                data=zip_buffer,
-                                file_name=nome_zip,
-                                mime="application/zip",
-                                use_container_width=True,
-                                type="primary",
-                                help="Backup completo com todos os formulários organizados"
-                            )
-                            
-                            st.success(f"✅ {qtd_arquivos} arquivos prontos para download")
-                            
-                        except Exception as e:
-                            st.error(f"❌ Erro ao criar pacote ZIP: {e}")
-                            st.info("💡 Você ainda pode baixar o consolidado acima")
-
-                    st.markdown("---")
-
-                    # Dica profissional
-                    st.info("💡 **Dica:** Baixe o pacote completo (ZIP) como backup. Use o consolidado para envio ao sistema.")
 
                 else:
                     st.warning("⚠️ Nenhum formulário foi salvo ainda.")
