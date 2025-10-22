@@ -225,7 +225,7 @@ def get_tamanho_legivel(tamanho_bytes):
         tamanho_bytes /= 1024.0
 
 
-def criar_zip_simples(output_dir, competencia_normalizada, unidade):
+def criar_zip_simples( competencia_normalizada, unidade):
     """
     Cria um ZIP simples com todos os arquivos CSV diretamente da memória.
     Versão otimizada para Streamlit Cloud que NÃO depende de arquivos físicos.

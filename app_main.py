@@ -809,8 +809,7 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                             st.info("📦 Preparando arquivos para download...")
                             
                             # Usa a função simplificada do file_utils
-                            zip_buffer, qtd_arquivos = criar_zip_simples(
-                                OUTPUT_DIR, 
+                            zip_buffer, qtd_arquivos = criar_zip_simples( 
                                 competencia_normalizada, 
                                 unidade
                             )
