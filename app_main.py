@@ -16,7 +16,6 @@ from config.constants import (
 from auth.login import mostrar_tela_login
 from components.header import mostrar_header_usuario
 from utils.validators import normalizar_nome_arquivo, validar_quantidade_ou_tempo
-from utils.file_utils import get_desktop_path
 import smtplib
 from email.message import EmailMessage
 import sqlite3
@@ -787,6 +786,10 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                 # SUBSTITUA A SEÇÃO DE ENVIO PARA KPIH NO SEU ARQUIVO PRINCIPAL
                 # Localização: Por volta da linha 700 do documento 1
                 # ============================================================================
+
+                if st.button("Fazer download dos arquivos", disabled=not st.session_state['consolidar']):
+                    # Lógica para download dos arquivos
+                    pass
 
                 # Botão de envio para KPIH - só habilitado após consolidação
                 if st.button("🚀 Enviar dados para KPIH", disabled=not st.session_state['consolidar']):
