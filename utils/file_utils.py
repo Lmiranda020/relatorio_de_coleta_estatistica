@@ -4,9 +4,9 @@ Funções para manipulação de arquivos e pastas
 import os
 import streamlit as st
 import zipfile
-from io import BytesIO
-import os
+from io import BytesIO, StringIO
 from datetime import datetime
+import pandas as pd
 
 def rastrear_arquivo_salvo(output_dir, nome_formulario, competencia, tipo_arquivo='csv'):
     """
@@ -216,6 +216,7 @@ Sistema de Coleta de Dados - CEJAM
     except Exception as e:
         raise Exception(f"Erro ao criar ZIP: {str(e)}")
 
+
 def get_tamanho_legivel(tamanho_bytes):
     """Converte bytes para formato legível (KB, MB)"""
     for unidade in ['B', 'KB', 'MB', 'GB']:
@@ -223,25 +224,22 @@ def get_tamanho_legivel(tamanho_bytes):
             return f"{tamanho_bytes:.1f} {unidade}"
         tamanho_bytes /= 1024.0
 
+
 def criar_zip_simples(output_dir, competencia_normalizada, unidade):
     """
-    Cria um ZIP simples com todos os arquivos CSV em uma única pasta.
-    Versão simplificada para download obrigatório.
+    Cria um ZIP simples com todos os arquivos CSV diretamente da memória.
+    Versão otimizada para Streamlit Cloud que NÃO depende de arquivos físicos.
     
     Args:
-        output_dir: Diretório com os arquivos
+        output_dir: Não utilizado (mantido para compatibilidade)
         competencia_normalizada: Competência no formato MM-AAAA
         unidade: Nome da unidade
         
     Returns:
         tuple: (BytesIO com o ZIP, quantidade de arquivos)
     """
-    from io import BytesIO
-    import zipfile
-    from datetime import datetime
-
-    # Debug para ver os formulários que traz da API e quais estão sendo salvos na memória do Streamlit
-
+    
+    # Debug para ver os formulários que estão na memória
     st.markdown("### 🔍 DEBUG - Formulários na Memória")
     formularios_data = st.session_state.get('formularios_data', {})
 
@@ -259,20 +257,60 @@ def criar_zip_simples(output_dir, competencia_normalizada, unidade):
             # Nome da pasta raiz dentro do ZIP
             pasta_raiz = f"formularios_preenchidos_{competencia_normalizada}"
             
-            # Percorre todos os arquivos CSV do diretório
-            if os.path.exists(output_dir):
-                for arquivo in os.listdir(output_dir):
-                    if arquivo.endswith('.csv'):
-                        caminho_completo = os.path.join(output_dir, arquivo)
-                        
-                        # Adiciona o arquivo dentro da pasta raiz
-                        zip_file.write(
-                            caminho_completo,
-                            arcname=f"{pasta_raiz}/{arquivo}"
-                        )
-                        arquivos_adicionados += 1
+            # ========================================
+            # LEITURA DIRETA DA MEMÓRIA (session_state)
+            # ========================================
+            for nome_formulario, df in formularios_data.items():
+                # Cria o nome do arquivo
+                nome_arquivo = f"{nome_formulario}_{competencia_normalizada}.csv"
+                nome_arquivo = nome_arquivo.replace("/", "-").replace(" ", "_")
+                
+                # Converte o DataFrame para CSV em memória
+                csv_buffer = StringIO()
+                df.to_csv(csv_buffer, index=False, encoding='utf-8-sig', sep=';')
+                csv_content = csv_buffer.getvalue().encode('utf-8-sig')
+                
+                # Adiciona o CSV ao ZIP
+                zip_file.writestr(
+                    f"{pasta_raiz}/{nome_arquivo}",
+                    csv_content
+                )
+                arquivos_adicionados += 1
+                st.success(f"✅ Adicionado ao ZIP: {nome_arquivo}")
             
+            # ========================================
+            # ADICIONA CÁLCULO DE ÁGUA (se existir)
+            # ========================================
+            if st.session_state.get('resultado_calculo_agua') is not None:
+                df_agua = st.session_state['resultado_calculo_agua'].copy()
+                nome_arquivo_agua = f"Consumo_Agua_{competencia_normalizada}.csv"
+                
+                csv_buffer = StringIO()
+                df_agua.to_csv(csv_buffer, index=False, encoding='utf-8-sig', sep=';')
+                csv_content = csv_buffer.getvalue().encode('utf-8-sig')
+                
+                zip_file.writestr(f"{pasta_raiz}/{nome_arquivo_agua}", csv_content)
+                arquivos_adicionados += 1
+                st.success(f"✅ Adicionado ao ZIP: {nome_arquivo_agua}")
+            
+            # ========================================
+            # ADICIONA ÁGUA QUENTE (se existir)
+            # ========================================
+            if st.session_state.get('df_agua_quente_final') is not None:
+                df_agua_quente = st.session_state['df_agua_quente_final'].copy()
+                nome_arquivo_agua_quente = f"Consumo_Agua_Quente_{competencia_normalizada}.csv"
+                
+                csv_buffer = StringIO()
+                df_agua_quente.to_csv(csv_buffer, index=False, encoding='utf-8-sig', sep=';')
+                csv_content = csv_buffer.getvalue().encode('utf-8-sig')
+                
+                zip_file.writestr(f"{pasta_raiz}/{nome_arquivo_agua_quente}", csv_content)
+                arquivos_adicionados += 1
+                st.success(f"✅ Adicionado ao ZIP: {nome_arquivo_agua_quente}")
+            
+            # ========================================
             # Adiciona arquivo README
+            # ========================================
             readme_content = f"""
 ╔══════════════════════════════════════════════════════════════╗
 ║          RELATÓRIO DE COLETA - CEJAM                         ║
