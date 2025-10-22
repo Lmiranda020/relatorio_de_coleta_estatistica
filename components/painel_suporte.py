@@ -247,7 +247,7 @@ def mostrar_painel_suporte():
                                         st.error("❌ Preencha todos os campos")
                         
                         if st.button("❌ Fechar detalhes", key=f"close_{ticket['id']}"):
-                            st.session_state[f'show_ticket_{ticket['id']}'] = False
+                            st.session_state[f'show_ticket_{ticket["id"]}'] = False
                             st.rerun()
 
     
