@@ -792,7 +792,12 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                     st.session_state['download_realizado'] = False
 
                 # BOTÃO 3: Download dos Arquivos (habilitado após consolidação)
-                download_habilitado = consolidar_habilitado and st.session_state['consolidar']
+                download_habilitado = (
+                    consolidar_habilitado and 
+                    st.session_state['consolidar'] and
+                    'formularios_data' in st.session_state and
+                    len(st.session_state['formularios_data']) > 0
+                )
 
                 if st.button("📥 Fazer Download dos Arquivos", disabled=not download_habilitado):
                     if download_habilitado:
@@ -835,12 +840,15 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                         except Exception as e:
                             st.error(f"❌ Erro ao preparar download: {e}")
                     else:
+                        # Mensagens mais específicas sobre o que falta
                         if not todos_formularios_prontos:
-                            st.warning("⚠️ Complete todos os formulários primeiro.")
+                            st.warning("⚠️ **Passo 1/4:** Complete todos os formulários primeiro.")
                         elif not st.session_state['calculo_agua_realizado']:
-                            st.warning("⚠️ Realize o cálculo de água primeiro.")
+                            st.warning("⚠️ **Passo 2/4:** Realize o cálculo de água primeiro.")
                         elif not st.session_state['consolidar']:
-                            st.warning("⚠️ Consolide os dados primeiro.")
+                            st.warning("⚠️ **Passo 3/4:** Clique em 'Consolidar Todos' primeiro.")
+                        else:
+                            st.warning("⚠️ Aguardando consolidação ser concluída...")
 
                 st.markdown("---")
 

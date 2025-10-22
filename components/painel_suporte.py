@@ -139,10 +139,10 @@ def mostrar_painel_suporte():
                 
                 with col4:
                     if st.button("👁️ Ver", key=f"ver_{ticket['id']}"):
-                        st.session_state[f'show_ticket_{ticket['id']}'] = True
+                        st.session_state[f'show_ticket_{ticket["id"]}'] = True
                 
                 # Mostrar detalhes se solicitado
-                if st.session_state.get(f'show_ticket_{ticket['id']}', False):
+                if st.session_state.get(f'show_ticket_{ticket["id"]}', False):
                     with st.expander("📝 Detalhes do Ticket", expanded=True):
                         st.write(f"**Mensagem:** {ticket['mensagem']}")
                         
