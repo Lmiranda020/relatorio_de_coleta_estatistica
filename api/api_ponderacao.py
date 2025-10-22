@@ -57,7 +57,7 @@ def de_para_ponderacao():
             return False
         
         # --- Obter token da unidade específica ---
-        st.info("📊 Obtendo token da unidade...")
+        st.info(f"📊 Obtendo token da unidade...{unidade_id}")
         token = get_token_unidades_importacao(unidade_id)
         
         if not token:
