@@ -11,11 +11,11 @@ import streamlit as st
 from datetime import datetime
 from data.limpeza_base_de_para_rpa_vs_kpih import (
     obter_competencia_usuario,
-    obter_token_por_unidade_id,
     obter_unidade_id_da_sessao
 )
 from api.api_centro_custo import ajustar_competencia
 import datetime
+from config.constants import get_token_unidades_importacao
 
 
 def encontrar_arquivo_consolidado(diretorio_saida, unidade, competencia):
@@ -188,7 +188,7 @@ def enviar_consolidado_para_api():
             return False, {}, {}
         
         st.info("🔑 Obtendo token de autenticação...")
-        token = obter_token_por_unidade_id()
+        token = get_token_unidades_importacao()
         
         if not token:
             st.error("❌ Não foi possível obter o token da unidade!")

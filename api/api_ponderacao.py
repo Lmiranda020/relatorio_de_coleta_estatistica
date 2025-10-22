@@ -7,7 +7,6 @@ from data.limpeza_base_de_para_poderacao import (
     validar_estrutura_depara, 
     obter_estatisticas_depara, 
     obter_competencia_usuario,
-    # obter_token_por_unidade_id,
     obter_unidade_id_da_sessao
 )
 import streamlit as st

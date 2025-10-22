@@ -148,54 +148,54 @@ def carregar_e_tratar_depara_json(caminho_excel: str) -> List[Dict[str, str]]:
         return []
 
 
-def obter_token_por_unidade_id() -> str:
-    """
-    Obtém o token da unidade com base no ID armazenado na sessão do Streamlit.
-    Filtra o arquivo de tokens pela unidade específica.
-    USA TOKENS DE IMPORTAÇÃO.
-    """
-    try:
-        # 1. Obter ID da unidade da sessão
-        unidade_id = st.session_state.get('unidade_id', None)
+# def obter_token_por_unidade_id() -> str:
+#     """
+#     Obtém o token da unidade com base no ID armazenado na sessão do Streamlit.
+#     Filtra o arquivo de tokens pela unidade específica.
+#     USA TOKENS DE IMPORTAÇÃO.
+#     """
+#     try:
+#         # 1. Obter ID da unidade da sessão
+#         unidade_id = st.session_state.get('unidade_id', None)
         
-        if not unidade_id:
-            st.error("❌ ID da unidade não encontrado na sessão. Execute primeiro a busca de dados permanentes.")
-            return ""
+#         if not unidade_id:
+#             st.error("❌ ID da unidade não encontrado na sessão. Execute primeiro a busca de dados permanentes.")
+#             return ""
         
-        st.info(f"🔍 Buscando token para unidade ID: {unidade_id}")
+#         st.info(f"🔍 Buscando token para unidade ID: {unidade_id}")
         
-        # 2. Verificar se o DataFrame foi carregado
-        TOKEN_UNIDADES_IMPORTACAO_DF = get_token_unidades_importacao()
-        if TOKEN_UNIDADES_IMPORTACAO_DF.empty:
-            st.error("❌ Arquivo de tokens não foi carregado corretamente")
-            return ""
+#         # 2. Verificar se o DataFrame foi carregado
+#         TOKEN_UNIDADES_IMPORTACAO_DF = get_token_unidades_importacao()
+#         if TOKEN_UNIDADES_IMPORTACAO_DF.empty:
+#             st.error("❌ Arquivo de tokens não foi carregado corretamente")
+#             return ""
         
-        st.info(f"📊 Total de unidades disponíveis: {len(TOKEN_UNIDADES_IMPORTACAO_DF)}")
+#         st.info(f"📊 Total de unidades disponíveis: {len(TOKEN_UNIDADES_IMPORTACAO_DF)}")
         
-        # 3. Filtrar pela unidade específica
-        unidade_filtrada = TOKEN_UNIDADES_IMPORTACAO_DF[TOKEN_UNIDADES_IMPORTACAO_DF['id'] == unidade_id]
+#         # 3. Filtrar pela unidade específica
+#         unidade_filtrada = TOKEN_UNIDADES_IMPORTACAO_DF[TOKEN_UNIDADES_IMPORTACAO_DF['id'] == unidade_id]
         
-        if unidade_filtrada.empty:
-            st.error(f"❌ Unidade com ID {unidade_id} não encontrada no arquivo de tokens")
-            st.warning("💡 Verifique se o ID está correto e se o arquivo de tokens está atualizado")
-            return ""
+#         if unidade_filtrada.empty:
+#             st.error(f"❌ Unidade com ID {unidade_id} não encontrada no arquivo de tokens")
+#             st.warning("💡 Verifique se o ID está correto e se o arquivo de tokens está atualizado")
+#             return ""
         
-        # 4. Obter token da unidade
-        token = unidade_filtrada.iloc[0]['token']
-        nome_unidade = unidade_filtrada.iloc[0].get('nome', f'Unidade {unidade_id}')
+#         # 4. Obter token da unidade
+#         token = unidade_filtrada.iloc[0]['token']
+#         nome_unidade = unidade_filtrada.iloc[0].get('nome', f'Unidade {unidade_id}')
         
-        st.success(f"✅ Token encontrado para {nome_unidade} (ID: {unidade_id})")
+#         st.success(f"✅ Token encontrado para {nome_unidade} (ID: {unidade_id})")
         
-        return str(token).strip()
+#         return str(token).strip()
         
-    except KeyError as e:
-        st.error(f"❌ Coluna não encontrada no DataFrame de tokens: {e}")
-        st.info("💡 Certifique-se de que o Excel tem as colunas: id, nome, token")
-        return ""
-    except Exception as e:
-        st.error(f"💥 Erro ao obter token da unidade: {e}")
-        st.exception(e)
-        return ""
+#     except KeyError as e:
+#         st.error(f"❌ Coluna não encontrada no DataFrame de tokens: {e}")
+#         st.info("💡 Certifique-se de que o Excel tem as colunas: id, nome, token")
+#         return ""
+#     except Exception as e:
+#         st.error(f"💥 Erro ao obter token da unidade: {e}")
+#         st.exception(e)
+#         return ""
 
 
 def validar_estrutura_depara(mapeamentos: List[Dict[str, str]]) -> bool:

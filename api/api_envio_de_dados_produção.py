@@ -7,10 +7,10 @@ import datetime
 import streamlit as st
 from data.limpeza_base_de_para_rpa_vs_kpih import (
     obter_competencia_usuario,
-    obter_token_por_unidade_id,
     obter_unidade_id_da_sessao
 )
 from api.api_centro_custo import ajustar_competencia
+from config.constants import get_token_unidades_importacao
 
 def encontrar_arquivo_producao(diretorio_saida, competencia):
     """Encontra o arquivo de produção"""
@@ -227,7 +227,7 @@ def enviar_producao_para_api():
         dados_extras['total_registros_producao'] = len(dados_para_envio)
         st.success(f"✅ {len(dados_para_envio)} registro(s) de produção preparado(s)")
         
-        token = obter_token_por_unidade_id()
+        token = get_token_unidades_importacao()
         if not token:
             st.warning("⚠️ Token não disponível - produção não enviada")
             dados_extras['erro_producao'] = 'token_indisponivel'

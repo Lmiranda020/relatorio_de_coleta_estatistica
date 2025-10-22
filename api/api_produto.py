@@ -7,9 +7,9 @@ from data.limpeza_base_de_para_produto import (
     validar_estrutura_depara, 
     obter_estatisticas_depara, 
     obter_competencia_usuario,
-    obter_token_por_unidade_id,
     obter_unidade_id_da_sessao
 )
+from config.constants import get_token_unidades_importacao
 import streamlit as st
 
 #CODIGO PARA FAZER O MAPEMANETO DE PRODUTO
@@ -61,7 +61,7 @@ def de_para_produto():
         
         # --- Obter token da unidade específica ---
         st.info("📊 Obtendo token da unidade...")
-        token = obter_token_por_unidade_id()
+        token = get_token_unidades_importacao()
         
         if not token:
             st.error("❌ Não foi possível obter o token da unidade!")
