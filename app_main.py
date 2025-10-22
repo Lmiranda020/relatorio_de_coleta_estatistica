@@ -45,7 +45,7 @@ except ImportError as e:
     st.warning(f"Módulos de API de centro de custo não encontrados: {e}")
     API_CENTRO_CUSTO_DISPONIVEL = False
 from components.modal_feedback_pos_envio import modal_feedback_sucesso
-from utils.file_utils import criar_zip_formularios, get_tamanho_legivel, criar_zip_simples
+from utils.file_utils import get_tamanho_legivel, criar_zip_simples
 import zipfile
 from io import BytesIO
 import tempfile
