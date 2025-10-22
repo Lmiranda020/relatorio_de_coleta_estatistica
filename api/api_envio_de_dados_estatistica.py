@@ -316,6 +316,7 @@ def enviar_consolidado_para_api():
                 st.write(f"**Email usuário:** {email_usuario}")
                 st.write(f"**Unidade usuário:** {unidade_usuario}")
                 st.write(f"**Formulários data:** {list(st.session_state.get('formularios_data', {}).keys())}")
+                st.stop()
                 st.write(f"**Unidade ID:** {unidade_id}")
         
         # URL da API
@@ -333,7 +334,7 @@ def enviar_consolidado_para_api():
             'timestamp_envio_api_estatisticas': datetime.now().isoformat(),
             'unidade_id': unidade_id,
             'total_registros_enviados_estatisticas': len(dados_para_envio),
-            'origem_dados': 'memoria_session_state'  # 🔥 Marcador importante
+            'origem_dados': 'memoria_session_state' 
         }
         
         with st.spinner("📡 Enviando dados para a API..."):
