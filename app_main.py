@@ -1760,12 +1760,6 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                         if dfs_para_consolidar:
                             df_final = pd.concat(dfs_para_consolidar, ignore_index=True)
                             
-                            # Caminho para salvar
-                            arquivo_consolidado = os.path.join(
-                                OUTPUT_DIR, 
-                                f"CONSOLIDADO_{unidade}_{competencia}.csv".replace("/", "-").replace(" ", "_")
-                            )
-                            
                             try:
                                 # Filtros finais
                                 tamanho_antes_filtro = len(df_final)
@@ -1776,10 +1770,27 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                                 if tamanho_antes_filtro != tamanho_depois_filtro:
                                     st.info(f"🧹 Filtros aplicados: {tamanho_antes_filtro - tamanho_depois_filtro} registros removidos")
                                 
-                                # Salva o arquivo
-                                df_final.to_csv(arquivo_consolidado, index=False, encoding="utf-8-sig", sep=";")
+                                # SALVA APENAS NA MEMÓRIA (SESSION_STATE)
+                                st.session_state['dados_consolidados'] = df_final.copy()
+                                st.session_state['df_consolidado'] = df_final.copy()  # Redundância para compatibilidade
+                                
+                                # Nome do arquivo (usado para download)
+                                nome_arquivo_consolidado = f"CONSOLIDADO_{unidade}_{competencia}.csv".replace("/", "-").replace(" ", "_")
+                                
+                                # Metadata do consolidado
+                                st.session_state['consolidado_metadata'] = {
+                                    'nome_arquivo': nome_arquivo_consolidado,
+                                    'timestamp': datetime.datetime.now().isoformat(),
+                                    'total_registros': len(df_final),
+                                    'total_formularios': len(formularios_consolidados),
+                                    'formularios': formularios_consolidados.copy(),
+                                    'origem_criticidade': "API" if dados_criticidade_vieram_da_api else "Manual",
+                                    'competencia': competencia,
+                                    'unidade': unidade
+                                }
                                 
                                 st.success("✅ Consolidação concluída com sucesso!")
+                                st.success("💾 Dados salvos na memória para download e envio à API")
                                 
                                 # === RESUMO DETALHADO ===
                                 st.markdown("### 📈 Resumo da Consolidação")
@@ -1799,10 +1810,11 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                                     origem_criticidade = "API" if dados_criticidade_vieram_da_api else "Manual"
                                     st.metric("Criticidade", origem_criticidade)
                                 
-                                st.info(f"📁 Arquivo salvo: {os.path.basename(arquivo_consolidado)}")
+                                st.info(f"📁 Arquivo preparado: {nome_arquivo_consolidado}")
+                                st.info("💡 Arquivo será incluído no download ZIP")
                                 
                                 # Lista dos formulários consolidados
-                                with st.expander("📋 Formulários consolidados neste arquivo"):
+                                with st.expander("📋 Formulários consolidados"):
                                     for i, form in enumerate(formularios_consolidados, 1):
                                         st.write(f"{i}. {form}")
                                 
@@ -1810,8 +1822,20 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                                 with st.expander("👀 Ver preview dos dados"):
                                     st.dataframe(df_final.head(20))
                                 
+                                # Debug para confirmar salvamento
+                                with st.expander("🔍 Debug - Dados na Memória"):
+                                    st.write("**Chaves criadas no session_state:**")
+                                    st.write(f"✅ 'dados_consolidados': {len(st.session_state.get('dados_consolidados', pd.DataFrame()))} linhas")
+                                    st.write(f"✅ 'df_consolidado': {len(st.session_state.get('df_consolidado', pd.DataFrame()))} linhas")
+                                    
+                                    metadata = st.session_state.get('consolidado_metadata', {})
+                                    st.write(f"✅ 'consolidado_metadata':")
+                                    for key, value in metadata.items():
+                                        if key != 'formularios':  # Não mostra a lista completa
+                                            st.write(f"   • {key}: {value}")
+                                
                             except Exception as consolidate_error:
-                                st.error(f"❌ Erro ao salvar arquivo consolidado: {str(consolidate_error)}")
+                                st.error(f"❌ Erro ao consolidar dados: {str(consolidate_error)}")
                                 st.exception(consolidate_error)
                                 st.session_state['consolidar'] = False
 

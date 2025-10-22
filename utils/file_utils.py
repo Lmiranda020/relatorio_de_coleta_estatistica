@@ -218,11 +218,20 @@ Sistema de Coleta de Dados - CEJAM
 
 
 def get_tamanho_legivel(tamanho_bytes):
-    """Converte bytes para formato legível (KB, MB)"""
+    """
+    Converte bytes para formato legível (KB, MB, etc.)
+    
+    Args:
+        tamanho_bytes: Tamanho em bytes
+        
+    Returns:
+        str: Tamanho formatado (ex: "1.5 MB")
+    """
     for unidade in ['B', 'KB', 'MB', 'GB']:
         if tamanho_bytes < 1024.0:
             return f"{tamanho_bytes:.1f} {unidade}"
         tamanho_bytes /= 1024.0
+    return f"{tamanho_bytes:.1f} TB"
 
 
 def criar_zip_simples( competencia_normalizada, unidade):
@@ -253,118 +262,138 @@ def criar_zip_simples( competencia_normalizada, unidade):
     arquivos_adicionados = 0
     
     try:
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            # Nome da pasta raiz dentro do ZIP
-            pasta_raiz = f"formularios_preenchidos_{competencia_normalizada}"
-            
-            # ========================================
-            # LEITURA DIRETA DA MEMÓRIA (session_state)
-            # ========================================
-            for nome_formulario, df in formularios_data.items():
-                # Cria o nome do arquivo
-                nome_arquivo = f"{nome_formulario}_{competencia_normalizada}.csv"
-                nome_arquivo = nome_arquivo.replace("/", "-").replace(" ", "_")
-                
-                # Converte o DataFrame para CSV em memória
-                csv_buffer = StringIO()
-                df.to_csv(csv_buffer, index=False, encoding='utf-8-sig', sep=';')
-                csv_content = csv_buffer.getvalue().encode('utf-8-sig')
-                
-                # Adiciona o CSV ao ZIP
-                zip_file.writestr(
-                    f"{pasta_raiz}/{nome_arquivo}",
-                    csv_content
-                )
-                arquivos_adicionados += 1
-                st.success(f"✅ Adicionado ao ZIP: {nome_arquivo}")
-            
-            # ========================================
-            # ADICIONA CÁLCULO DE ÁGUA (se existir)
-            # ========================================
-            if st.session_state.get('resultado_calculo_agua') is not None:
-                df_agua = st.session_state['resultado_calculo_agua'].copy()
-                nome_arquivo_agua = f"Consumo_Agua_{competencia_normalizada}.csv"
-                
-                csv_buffer = StringIO()
-                df_agua.to_csv(csv_buffer, index=False, encoding='utf-8-sig', sep=';')
-                csv_content = csv_buffer.getvalue().encode('utf-8-sig')
-                
-                zip_file.writestr(f"{pasta_raiz}/{nome_arquivo_agua}", csv_content)
-                arquivos_adicionados += 1
-                st.success(f"✅ Adicionado ao ZIP: {nome_arquivo_agua}")
-            
-            # ========================================
-            # ADICIONA ÁGUA QUENTE (se existir)
-            # ========================================
-            if st.session_state.get('df_agua_quente_final') is not None:
-                df_agua_quente = st.session_state['df_agua_quente_final'].copy()
-                nome_arquivo_agua_quente = f"Consumo_Agua_Quente_{competencia_normalizada}.csv"
-                
-                csv_buffer = StringIO()
-                df_agua_quente.to_csv(csv_buffer, index=False, encoding='utf-8-sig', sep=';')
-                csv_content = csv_buffer.getvalue().encode('utf-8-sig')
-                
-                zip_file.writestr(f"{pasta_raiz}/{nome_arquivo_agua_quente}", csv_content)
-                arquivos_adicionados += 1
-                st.success(f"✅ Adicionado ao ZIP: {nome_arquivo_agua_quente}")
-            
-            # ========================================
-            # Adiciona arquivo README
-            # ========================================
-            readme_content = f"""
-╔══════════════════════════════════════════════════════════════╗
-║          RELATÓRIO DE COLETA - CEJAM                         ║
-╚══════════════════════════════════════════════════════════════╝
-
-INFORMAÇÕES DO PACOTE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Unidade: {unidade}
-Competência: {competencia_normalizada.replace('_', ' ').replace('-', '/')}
-Data de geração: {datetime.now().strftime('%d/%m/%Y às %H:%M')}
-Total de arquivos: {arquivos_adicionados}
-
-CONTEÚDO DO PACOTE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ Formulários individuais preenchidos
-✅ Dados permanentes obtidos via API
-✅ Arquivo CONSOLIDADO (pronto para envio ao KPIH)
-✅ Cálculos de consumo de água
-
-INSTRUÇÕES DE USO
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. 📤 ENVIAR PARA KPIH:
-   → Use o arquivo que começa com "CONSOLIDADO_"
-   → Este arquivo contém todos os dados organizados
-
-2. 💾 BACKUP:
-   → Mantenha esta pasta compactada como backup
-   → Útil para auditorias e conferências
-
-3. 🔍 CONFERÊNCIA:
-   → Os demais arquivos CSV são os formulários individuais
-   → Use para conferir dados específicos se necessário
-
-DETALHES TÉCNICOS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Formato: CSV
-Separador: ; (ponto e vírgula)
-Encoding: UTF-8 com BOM
-Decimal: , (vírgula)
-
-SUPORTE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📧 Email: custos@cejam.org.br
-🎫 Sistema de tickets disponível no menu
-
-═══════════════════════════════════════════════════════════════
-Sistema de Coleta de Dados - CEJAM © {datetime.now().year}
-═══════════════════════════════════════════════════════════════
-            """.strip()
-            
-            zip_file.writestr(f"{pasta_raiz}/LEIA-ME.txt", readme_content.encode('utf-8'))
+        zip_buffer = BytesIO()
+        arquivos_adicionados = 0
         
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            
+            # === 1. ADICIONAR FORMULÁRIOS INDIVIDUAIS ===
+            formularios_data = st.session_state.get('formularios_data', {})
+            
+            for nome_formulario, df in formularios_data.items():
+                try:
+                    # Ignora formulários vazios
+                    if df.empty:
+                        continue
+                    
+                    # Filtra quantidade = 0
+                    df_limpo = df[df['Quantidade'].astype(str) != "0"].copy()
+                    
+                    if df_limpo.empty:
+                        continue
+                    
+                    # Gera CSV na memória
+                    csv_buffer = BytesIO()
+                    df_limpo.to_csv(csv_buffer, index=False, encoding="utf-8-sig", sep=";")
+                    csv_buffer.seek(0)
+                    
+                    # Nome do arquivo no ZIP
+                    nome_arquivo = f"{nome_formulario}_{competencia_normalizada}.csv"
+                    nome_arquivo = nome_arquivo.replace("/", "-").replace(" ", "_")
+                    
+                    # Adiciona ao ZIP
+                    zip_file.writestr(nome_arquivo, csv_buffer.getvalue())
+                    arquivos_adicionados += 1
+                    
+                except Exception as e:
+                    st.warning(f"⚠️ Erro ao adicionar {nome_formulario}: {e}")
+                    continue
+            
+            # === 2. ADICIONAR ARQUIVO CONSOLIDADO DA MEMÓRIA ===
+            if 'dados_consolidados' in st.session_state:
+                try:
+                    df_consolidado = st.session_state['dados_consolidados']
+                    metadata = st.session_state.get('consolidado_metadata', {})
+                    
+                    if not df_consolidado.empty:
+                        # Gera CSV na memória
+                        csv_buffer = BytesIO()
+                        df_consolidado.to_csv(csv_buffer, index=False, encoding="utf-8-sig", sep=";")
+                        csv_buffer.seek(0)
+                        
+                        # Nome do arquivo (usa o metadata se disponível)
+                        nome_arquivo_consolidado = metadata.get(
+                            'nome_arquivo',
+                            f"CONSOLIDADO_{unidade}_{competencia_normalizada}.csv"
+                        )
+                        nome_arquivo_consolidado = nome_arquivo_consolidado.replace("/", "-").replace(" ", "_")
+                        
+                        # Adiciona ao ZIP
+                        zip_file.writestr(nome_arquivo_consolidado, csv_buffer.getvalue())
+                        arquivos_adicionados += 1
+                        
+                        st.success(f"✅ Consolidado incluído: {nome_arquivo_consolidado}")
+                    else:
+                        st.warning("⚠️ Consolidado está vazio, não será incluído no ZIP")
+                        
+                except Exception as e:
+                    st.error(f"❌ Erro ao adicionar consolidado ao ZIP: {e}")
+            else:
+                st.warning("⚠️ Dados consolidados não encontrados na memória")
+            
+            # === 3. ADICIONAR CÁLCULO DE ÁGUA (se existir) ===
+            if 'resultado_calculo_agua' in st.session_state:
+                try:
+                    df_agua = st.session_state['resultado_calculo_agua']
+                    
+                    if not df_agua.empty:
+                        df_agua_limpo = df_agua[df_agua['Quantidade'] != 0].copy()
+                        
+                        if not df_agua_limpo.empty:
+                            # Formata quantidade
+                            df_agua_limpo['Quantidade'] = df_agua_limpo['Quantidade'].apply(
+                                lambda x: f"{x:.2f}".replace(".", ",")
+                            )
+                            
+                            # Gera CSV
+                            csv_buffer = BytesIO()
+                            df_agua_limpo.to_csv(csv_buffer, index=False, encoding="utf-8-sig", sep=";")
+                            csv_buffer.seek(0)
+                            
+                            nome_arquivo_agua = f"Consumo_Agua_{competencia_normalizada}.csv"
+                            zip_file.writestr(nome_arquivo_agua, csv_buffer.getvalue())
+                            arquivos_adicionados += 1
+                            
+                except Exception as e:
+                    st.warning(f"⚠️ Erro ao adicionar cálculo de água: {e}")
+            
+            # === 4. ADICIONAR ÁGUA QUENTE (se existir) ===
+            if 'df_agua_quente_final' in st.session_state:
+                try:
+                    df_agua_quente = st.session_state['df_agua_quente_final']
+                    
+                    if not df_agua_quente.empty:
+                        df_agua_quente_limpo = df_agua_quente[df_agua_quente['Quantidade'] != 0].copy()
+                        
+                        if not df_agua_quente_limpo.empty:
+                            # Formata quantidade
+                            df_agua_quente_limpo['Quantidade'] = df_agua_quente_limpo['Quantidade'].apply(
+                                lambda x: f"{x:.2f}".replace(".", ",")
+                            )
+                            
+                            # Gera CSV
+                            csv_buffer = BytesIO()
+                            df_agua_quente_limpo.to_csv(csv_buffer, index=False, encoding="utf-8-sig", sep=";")
+                            csv_buffer.seek(0)
+                            
+                            nome_arquivo_agua_quente = f"Consumo_Agua_Quente_{competencia_normalizada}.csv"
+                            zip_file.writestr(nome_arquivo_agua_quente, csv_buffer.getvalue())
+                            arquivos_adicionados += 1
+                            
+                except Exception as e:
+                    st.warning(f"⚠️ Erro ao adicionar água quente: {e}")
+        
+        # Posiciona o buffer no início
         zip_buffer.seek(0)
+        
+        if arquivos_adicionados == 0:
+            st.error("❌ Nenhum arquivo foi adicionado ao ZIP")
+            return None, 0
+        
+        st.success(f"✅ ZIP criado com {arquivos_adicionados} arquivos")
         return zip_buffer, arquivos_adicionados
         
     except Exception as e:
-        raise Exception(f"Erro ao criar ZIP simplificado: {str(e)}")
+        st.error(f"❌ Erro ao criar ZIP: {e}")
+        st.exception(e)
+        return None, 0
