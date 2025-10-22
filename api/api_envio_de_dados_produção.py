@@ -1,8 +1,6 @@
 import requests
 import pandas as pd
 import json
-import os
-import glob
 import datetime
 import streamlit as st
 from data.limpeza_base_de_para_rpa_vs_kpih import (
@@ -12,37 +10,38 @@ from data.limpeza_base_de_para_rpa_vs_kpih import (
 from api.api_centro_custo import ajustar_competencia
 from config.constants import get_token_unidades_importacao
 
-def encontrar_arquivo_producao(diretorio_saida, competencia):
-    """Encontra o arquivo de produção"""
+
+def obter_dados_producao_da_memoria():
+    """
+    Busca os dados de produção diretamente do session_state.
+    Retorna o DataFrame se existir, None caso contrário.
+    """
     try:
-        padrao_arquivo = f"Produção_{competencia}*.csv"
-        padrao_arquivo = padrao_arquivo.replace("/", "-").replace(" ", "_")
-        caminho_busca = os.path.join(diretorio_saida, padrao_arquivo)
-        arquivos_encontrados = glob.glob(caminho_busca)
+        # Busca no dicionário de formulários
+        formularios_data = st.session_state.get('formularios_data', {})
         
-        if not arquivos_encontrados:
-            return None
+        # O formulário de produção pode ter esse nome exato
+        if 'Produção' in formularios_data:
+            df_producao = formularios_data['Produção']
+            
+            if isinstance(df_producao, pd.DataFrame) and not df_producao.empty:
+                st.success(f"✅ Dados de produção encontrados na memória: {len(df_producao)} registros")
+                return df_producao
         
-        return max(arquivos_encontrados, key=os.path.getctime)
+        st.warning("⚠️ Dados de produção não encontrados na memória")
+        return None
         
     except Exception as e:
-        st.warning(f"⚠️ Erro ao buscar arquivo de produção: {str(e)}")
+        st.error(f"❌ Erro ao buscar dados de produção: {e}")
         return None
 
 
-def transformar_dados_producao(caminho_arquivo):
+def transformar_dados_producao_da_memoria(df):
     """
-    Transforma dados de produção do Excel/CSV para formato da API.
-    Formato esperado do arquivo: colunas 'Ponderação', 'Centro de Custo' e 'Quantidade'
+    Transforma o DataFrame de produção da memória para o formato da API.
+    Formato esperado: colunas 'Ponderação', 'Centro de Custo' e 'Quantidade'
     """
     try:
-        # Tenta ler como CSV primeiro
-        try:
-            df = pd.read_csv(caminho_arquivo, sep=';', encoding='utf-8-sig')
-        except:
-            # Se falhar, tenta como Excel
-            df = pd.read_excel(caminho_arquivo)
-        
         # Validar colunas necessárias
         colunas_necessarias = ['Ponderação', 'Centro de Custo', 'Quantidade']
         colunas_faltantes = [col for col in colunas_necessarias if col not in df.columns]
@@ -96,17 +95,22 @@ def transformar_dados_producao(caminho_arquivo):
         if registros_ignorados > 3:
             st.info(f"   ... e mais {registros_ignorados - 3} registros também foram ignorados")
         
-        return dados_api if dados_api else None
+        if not dados_api:
+            st.warning("⚠️ Nenhum registro válido após transformação")
+            return None
+        
+        st.success(f"✅ {len(dados_api)} registros válidos preparados")
+        return dados_api
         
     except Exception as e:
-        st.error(f"❌ Erro ao processar arquivo de produção: {str(e)}")
+        st.error(f"❌ Erro ao processar dados de produção: {str(e)}")
         st.exception(e)
         return None
+
 
 def analisar_resposta_producao(response_json, dados_enviados):
     """
     Analisa a resposta da API de produção para identificar erros.
-    Mesma lógica robusta usada em estatísticas.
     """
     resultado = {
         'total_enviados': len(dados_enviados),
@@ -119,32 +123,25 @@ def analisar_resposta_producao(response_json, dados_enviados):
     
     try:
         if isinstance(response_json, dict):
-            # Formato 1: {"message": "...", "errors": {"0": "erro", "1": "erro"}}
             if 'errors' in response_json:
                 errors_dict = response_json['errors']
                 
                 if isinstance(errors_dict, dict):
-                    # Itera pelos erros usando o índice
                     for indice_str, mensagem_erro in errors_dict.items():
                         try:
                             idx = int(indice_str)
                             
-                            # Verifica se o índice é válido
                             if 0 <= idx < len(dados_enviados):
-                                registro_original = dados_enviados[idx]
-                                
                                 resultado['registros_com_erro'].append({
                                     'motivo': str(mensagem_erro)
                                 })
                             else:
-                                # Índice fora do range - registra mesmo assim
                                 resultado['registros_com_erro'].append({
                                     'motivo': str(mensagem_erro)
                                 })
                                 
                         except (ValueError, TypeError) as e:
                             st.warning(f"⚠️ Erro ao processar índice '{indice_str}': {e}")
-                            # Registra erro mesmo sem conseguir parsear índice
                             resultado['registros_com_erro'].append({
                                 'indice': indice_str,
                                 'motivo': str(mensagem_erro)
@@ -153,7 +150,6 @@ def analisar_resposta_producao(response_json, dados_enviados):
                     resultado['total_rejeitados'] = len(errors_dict)
                 
                 elif isinstance(errors_dict, list):
-                    # Se errors vier como lista
                     for i, erro in enumerate(errors_dict):
                         if isinstance(erro, dict):
                             resultado['registros_com_erro'].append({
@@ -166,13 +162,10 @@ def analisar_resposta_producao(response_json, dados_enviados):
                     
                     resultado['total_rejeitados'] = len(errors_dict)
             
-            # Calcula aceitos
             resultado['total_aceitos'] = resultado['total_enviados'] - resultado['total_rejeitados']
         
-        # Define se foi parcial
         resultado['parcial'] = resultado['total_rejeitados'] > 0
         
-        # Mensagem resumo
         if resultado['total_rejeitados'] == 0:
             resultado['mensagem_resumo'] = f"✅ Todos os {resultado['total_aceitos']} registros foram aceitos"
         else:
@@ -185,58 +178,65 @@ def analisar_resposta_producao(response_json, dados_enviados):
         
     except Exception as e:
         st.error(f"⚠️ Erro ao analisar resposta de produção: {e}")
-        # Em caso de erro, assume que tudo foi aceito (fallback seguro)
         resultado['total_aceitos'] = resultado['total_enviados']
         resultado['mensagem_resumo'] = f"⚠️ {resultado['total_enviados']} enviados (análise de erros falhou)"
         return resultado
 
+
 def enviar_producao_para_api():
     """
     Envia dados de produção para a API.
+    BUSCA DADOS DA MEMÓRIA (session_state) ao invés do sistema de arquivos.
+    
     RETORNA: (sucesso: bool, dados_extras: dict)
     """
     try:
         unidade_id = obter_unidade_id_da_sessao()
         competencia_usuario = obter_competencia_usuario()
-        diretorio_saida = st.session_state.get('output_dir', None)
         
         dados_extras = {
-            'timestamp_envio_producao': datetime.datetime.now().isoformat()
+            'timestamp_envio_producao': datetime.datetime.now().isoformat(),
+            'origem_dados': 'memoria_session_state'
         }
         
-        if not unidade_id or not competencia_usuario or not diretorio_saida:
+        if not unidade_id or not competencia_usuario:
             st.warning("⚠️ Produção não enviada - dados incompletos")
             dados_extras['erro_producao'] = 'dados_incompletos'
             return False, dados_extras
         
-        caminho_arquivo = encontrar_arquivo_producao(diretorio_saida, competencia_usuario)
-        if not caminho_arquivo:
-            st.info("ℹ️ Arquivo de produção não encontrado - pulando envio")
+        # 🔥 BUSCAR DADOS DA MEMÓRIA AO INVÉS DE ARQUIVO
+        st.info("🔍 Buscando dados de produção na memória...")
+        df_producao = obter_dados_producao_da_memoria()
+        
+        if df_producao is None:
+            st.info("ℹ️ Dados de produção não encontrados - pulando envio")
             dados_extras['erro_producao'] = 'arquivo_nao_encontrado'
             return False, dados_extras
         
-        st.info(f"📊 Processando arquivo: {os.path.basename(caminho_arquivo)}")
-        dados_extras['arquivo_producao_enviado'] = os.path.basename(caminho_arquivo)
+        # Transformar DataFrame para formato da API
+        st.info("🔄 Transformando dados para formato da API...")
+        dados_para_envio = transformar_dados_producao_da_memoria(df_producao)
         
-        dados_para_envio = transformar_dados_producao(caminho_arquivo)
         if not dados_para_envio:
             st.warning("⚠️ Nenhum dado válido de produção para enviar")
             dados_extras['erro_producao'] = 'dados_invalidos'
             return False, dados_extras
         
         dados_extras['total_registros_producao'] = len(dados_para_envio)
-        st.success(f"✅ {len(dados_para_envio)} registro(s) de produção preparado(s)")
         
+        # Obter token
+        st.info("🔑 Obtendo token de autenticação...")
         token = get_token_unidades_importacao(unidade_id)
+        
         if not token:
             st.warning("⚠️ Token não disponível - produção não enviada")
             dados_extras['erro_producao'] = 'token_indisponivel'
             return False, dados_extras
         
-        # Ajustar competência para formato MM/AAAA
+        # Ajustar competência
         competencia_ajustada = ajustar_competencia(competencia_usuario)
         
-        # PAYLOAD NO FORMATO EXATO DA API
+        # Montar payload
         payload = {
             "competencia": competencia_ajustada,
             "dados": dados_para_envio
@@ -249,9 +249,8 @@ def enviar_producao_para_api():
             if payload['dados']:
                 st.write("**Exemplo do primeiro registro:**")
                 st.json(payload['dados'][0])
-            st.write("**Payload completo:**")
-            st.json(payload)
         
+        # URL e headers
         url = 'https://backoffice.kpih.com.br:8000/api/v2/kpih/producoes'
         headers = {
             "Authorization": f"Bearer {token}",
@@ -267,17 +266,12 @@ def enviar_producao_para_api():
             st.info(f"📊 Status Code: {response.status_code}")
             
             if response.status_code in [200, 201]:
-
                 try:
                     resposta_api = response.json()
                 except:
                     resposta_api = {"mensagem": response.text}
                 
-                # Verifica se é envio parcial
-                mensagem_api = resposta_api.get('message', resposta_api.get('mensagem', ''))
-                is_parcial = 'parcialmente' in mensagem_api.lower()
-                
-                # Analisa a resposta para identificar erros
+                # Analisa a resposta
                 analise = analisar_resposta_producao(resposta_api, dados_para_envio)
                 dados_extras['analise_envio_producao'] = analise
                 
@@ -289,56 +283,32 @@ def enviar_producao_para_api():
                     'timestamp': datetime.datetime.now().isoformat()
                 }
                 
+                st.success(analise['mensagem_resumo'])
+                
                 with st.expander("📄 Detalhes da resposta da API"):
-                    try:
-                        st.json(response.json())
-                    except:
-                        st.text(response.text)
-                
-                email_usuario = st.session_state.get('email_usuario')
-                unidade_usuario = st.session_state.get('unidade_usuario')
-                
-                if email_usuario and unidade_usuario:
-                    st.info("💾 Registrando envio no banco de dados...")
-                    
-                    preenchimento_id = registrar_no_banco(
-                        email_usuario=email_usuario,
-                        unidade_usuario=unidade_usuario,
-                        competencia_usuario=competencia_usuario,
-                        dados_extras=dados_extras,
-                        status_envio='enviado_api_sucesso'
-                    )
-                    
-                    if preenchimento_id:
-                        st.success(f"✅ Registro #{preenchimento_id} salvo no banco!")
-                        dados_extras['preenchimento_id'] = preenchimento_id
-                    else:
-                        st.warning("⚠️ Envio bem-sucedido mas falha ao registrar no banco")
-                else:
-                    st.warning("⚠️ Email/Unidade não encontrados - registro no banco pulado")
-
+                    st.json(resposta_api)
                 
                 return True, dados_extras
                 
             elif response.status_code == 400:
-                st.error(f"❌ Erro de validação (400)")
+                st.error("❌ Erro de validação (400)")
                 with st.expander("📄 Ver erro"):
                     st.error(response.text)
-                dados_extras['erro_producao'] = f'http_400'
+                dados_extras['erro_producao'] = 'http_400'
                 return False, dados_extras
                 
             elif response.status_code == 401:
-                st.error(f"❌ Token inválido (401)")
+                st.error("❌ Token inválido (401)")
                 with st.expander("📄 Ver erro"):
                     st.error(response.text)
-                dados_extras['erro_producao'] = f'http_401'
+                dados_extras['erro_producao'] = 'http_401'
                 return False, dados_extras
                 
             elif response.status_code == 422:
-                st.error(f"❌ Erro de validação de dados (422)")
+                st.error("❌ Erro de validação de dados (422)")
                 with st.expander("📄 Ver erro"):
                     st.error(response.text)
-                dados_extras['erro_producao'] = f'http_422'
+                dados_extras['erro_producao'] = 'http_422'
                 return False, dados_extras
                 
             else:
@@ -367,7 +337,7 @@ def enviar_producao_para_api():
 
 
 # ============================================================================
-# FUNÇÃO DE REGISTRO NO BANCO (MESMA DO CÓDIGO ORIGINAL)
+# FUNÇÃO DE REGISTRO NO BANCO (MANTIDA IGUAL)
 # ============================================================================
 
 def registrar_no_banco(email_usuario, unidade_usuario, competencia_usuario, dados_extras, status_envio='enviado_api_sucesso'):
@@ -426,7 +396,6 @@ def registrar_no_banco(email_usuario, unidade_usuario, competencia_usuario, dado
         
         if preenchimento_id:
             st.success(f"✅ Registro salvo com sucesso! ID: {preenchimento_id}")
-            st.rerun()
             return preenchimento_id
         else:
             st.error("❌ Método de registro retornou None")
