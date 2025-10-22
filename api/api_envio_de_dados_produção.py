@@ -227,7 +227,7 @@ def enviar_producao_para_api():
         dados_extras['total_registros_producao'] = len(dados_para_envio)
         st.success(f"✅ {len(dados_para_envio)} registro(s) de produção preparado(s)")
         
-        token = get_token_unidades_importacao()
+        token = get_token_unidades_importacao(unidade_id)
         if not token:
             st.warning("⚠️ Token não disponível - produção não enviada")
             dados_extras['erro_producao'] = 'token_indisponivel'

@@ -2,13 +2,6 @@ import requests
 import pandas as pd
 import streamlit as st
 
-# from config.constants import TOKEN_UNIDADES_EXPORTACAO_DF
-
-# df_unidades = TOKEN_UNIDADES_EXPORTACAO_DF
-
-from config.constants import get_token_unidades_exportacao
-df_unidades = get_token_unidades_exportacao()
-
 def get_dados_permanentes(competencia_valida, payload_data):
     """
     Consome a API de dados permanentes
@@ -20,6 +13,9 @@ def get_dados_permanentes(competencia_valida, payload_data):
         if not unidade_id: # se não encontrar o id da unidade
             st.error("❌ ID da unidade não encontrado")
             return {} #retorna um dicionário vazio
+        
+        # from config.constants import get_token_unidades_exportacao
+        # df_unidades = get_token_unidades_exportacao(unidade_id)
 
         url = f"https://www.kpih.com.br/api/v2/estatisticas/{unidade_id}" #url da API de dados permanentes juntamento com o id da unidade
 

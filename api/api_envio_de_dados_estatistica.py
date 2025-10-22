@@ -188,7 +188,7 @@ def enviar_consolidado_para_api():
             return False, {}, {}
         
         st.info("🔑 Obtendo token de autenticação...")
-        token = get_token_unidades_importacao()
+        token = get_token_unidades_importacao(unidade_id)
         
         if not token:
             st.error("❌ Não foi possível obter o token da unidade!")

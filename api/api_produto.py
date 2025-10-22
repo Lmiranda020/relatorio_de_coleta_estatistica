@@ -61,7 +61,7 @@ def de_para_produto():
         
         # --- Obter token da unidade específica ---
         st.info("📊 Obtendo token da unidade...")
-        token = get_token_unidades_importacao()
+        token = get_token_unidades_importacao(unidade_id)
         
         if not token:
             st.error("❌ Não foi possível obter o token da unidade!")
