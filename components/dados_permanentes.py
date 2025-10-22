@@ -397,33 +397,16 @@ def salvar_dados_permanentes_individuais(dados_filtrados, competencia_selecionad
                         "Área (m²) x Nível de Criticidade (Área Não Crítica - I)"
                     ]
                     
-                    # ============================================================================
-                    # 🔥 CORREÇÃO: CRIAR PLACEHOLDERS PARA OS 3 FORMULÁRIOS
-                    # ============================================================================
-                    
-                    st.info("📋 Criando marcadores para os 3 formulários de criticidade...")
-                    
                     # Cria DataFrames VAZIOS como marcadores (a tratativa vai preencher depois)
+                    # cria um datagrame vazio com a mesma estrutura dos dados, apenas para marcar como processado
+                    # quando consolidar os dados, vai preencher com os dados corretos
                     for form_criticidade in formularios_criticidade:
                         # Cria um DataFrame vazio com a mesma estrutura
                         df_placeholder = pd.DataFrame(columns=df.columns)
                         
                         # Salva no session_state como "processado" (mas vazio)
                         st.session_state['formularios_data'][form_criticidade] = df_placeholder.copy()
-                        
-                        st.success(f"  ✅ Placeholder criado: {form_criticidade}")
-                    
-                    # ============================================================================
-                    # FIM DA CORREÇÃO
-                    # ============================================================================
-                    
-                    st.success(f"Arquivo único de criticidade salvo: {nome_arquivo} ({len(df)} registros)")
-                    st.info(f"⚠️ Os 3 arquivos específicos serão preenchidos após aplicar o de-para na consolidação")
-                    
-                    # Listar quais serão criados depois
-                    with st.expander("📋 Formulários que serão preenchidos pela tratativa"):
-                        for form in formularios_criticidade:
-                            st.write(f"• {form}")
+    
             else:
                     
                 # Converte para DataFrame, se há dados, para isso chama a função que criei acima, passo o nome do formulário e os dados
