@@ -853,10 +853,11 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                 st.markdown("---")
 
                 envio_habilitado = (
-                    consolidar_habilitado and 
-                    st.session_state['consolidar'] and 
-                    st.session_state.get('download_realizado', False) and
-                    consolidado_valido
+                    todos_formularios_prontos and                           # Passo 1: Formulários completos
+                    st.session_state['calculo_agua_realizado'] and         # Passo 2: Cálculo de água
+                    st.session_state['consolidar'] and                      # Passo 3: Consolidação
+                    st.session_state.get('download_realizado', False) and  # Passo 4: Download realizado
+                    consolidado_valido                                      # Validação dos dados
                 )
 
                 # Botão de envio para KPIH - só habilitado após consolidação
