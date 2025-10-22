@@ -7,10 +7,11 @@ from data.limpeza_base_de_para_poderacao import (
     validar_estrutura_depara, 
     obter_estatisticas_depara, 
     obter_competencia_usuario,
-    obter_token_por_unidade_id,
+    # obter_token_por_unidade_id,
     obter_unidade_id_da_sessao
 )
 import streamlit as st
+from config.constants import get_token_unidades_importacao
 
 def ajustar_competencia(competencia: str) -> str:
     """
@@ -58,7 +59,7 @@ def de_para_ponderacao():
         
         # --- Obter token da unidade específica ---
         st.info("📊 Obtendo token da unidade...")
-        token = obter_token_por_unidade_id()
+        token = get_token_unidades_importacao()
         
         if not token:
             st.error("❌ Não foi possível obter o token da unidade!")

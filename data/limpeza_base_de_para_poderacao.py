@@ -115,45 +115,45 @@ def carregar_e_tratar_depara_json(caminho_excel: str) -> List[Dict[str, str]]:
         return []
 
 
-def obter_token_por_unidade_id() -> str:
-    """
-    Obtém o token da unidade com base no ID armazenado na sessão do Streamlit.
-    Filtra o arquivo de tokens pela unidade específica.
-    """
-    try:
-        # 1. Obter ID da unidade da sessão
-        unidade_id = st.session_state.get('unidade_id', None)
+# def obter_token_por_unidade_id() -> str:
+#     """
+#     Obtém o token da unidade com base no ID armazenado na sessão do Streamlit.
+#     Filtra o arquivo de tokens pela unidade específica.
+#     """
+#     try:
+#         # 1. Obter ID da unidade da sessão
+#         unidade_id = st.session_state.get('unidade_id', None)
         
-        if not unidade_id:
-            st.error("❌ ID da unidade não encontrado na sessão. Execute primeiro a busca de dados permanentes.")
-            return ""
+#         if not unidade_id:
+#             st.error("❌ ID da unidade não encontrado na sessão. Execute primeiro a busca de dados permanentes.")
+#             return ""
         
-        st.info(f"🔍 Buscando token para unidade ID: {unidade_id}")
+#         st.info(f"🔍 Buscando token para unidade ID: {unidade_id}")
         
-        # 2. Carregar arquivo de tokens
-        from config.constants import TOKEN_UNIDADES_IMPORTACAO
+#         # 2. Carregar arquivo de tokens
+#         from config.constants import TOKEN_UNIDADES_IMPORTACAO
         
-        df_unidades = pd.read_excel(TOKEN_UNIDADES_IMPORTACAO)
-        st.info(f"📊 Total de unidades no arquivo: {len(df_unidades)}")
+#         df_unidades = pd.read_excel(TOKEN_UNIDADES_IMPORTACAO)
+#         st.info(f"📊 Total de unidades no arquivo: {len(df_unidades)}")
         
-        # 3. Filtrar pela unidade específica
-        unidade_filtrada = df_unidades[df_unidades['id'] == unidade_id]
+#         # 3. Filtrar pela unidade específica
+#         unidade_filtrada = df_unidades[df_unidades['id'] == unidade_id]
         
-        if unidade_filtrada.empty:
-            st.error(f"❌ Unidade com ID {unidade_id} não encontrada no arquivo de tokens")
-            return ""
+#         if unidade_filtrada.empty:
+#             st.error(f"❌ Unidade com ID {unidade_id} não encontrada no arquivo de tokens")
+#             return ""
         
-        # 4. Obter token da unidade
-        token = unidade_filtrada.iloc[0]['token']
-        nome_unidade = unidade_filtrada.iloc[0].get('nome', f'Unidade {unidade_id}')
+#         # 4. Obter token da unidade
+#         token = unidade_filtrada.iloc[0]['token']
+#         nome_unidade = unidade_filtrada.iloc[0].get('nome', f'Unidade {unidade_id}')
         
-        st.success(f"✅ Token encontrado para {nome_unidade} (ID: {unidade_id})")
+#         st.success(f"✅ Token encontrado para {nome_unidade} (ID: {unidade_id})")
         
-        return token
+#         return token
         
-    except Exception as e:
-        st.error(f"💥 Erro ao obter token da unidade: {e}")
-        return ""
+#     except Exception as e:
+#         st.error(f"💥 Erro ao obter token da unidade: {e}")
+#         return ""
 
 
 def validar_estrutura_depara(mapeamentos: List[Dict[str, str]]) -> bool:
