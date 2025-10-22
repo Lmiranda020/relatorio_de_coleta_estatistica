@@ -109,20 +109,90 @@ def carregar_tokens_exportacao():
 
 # ========== FUNÇÕES AUXILIARES PARA COMPATIBILIDADE ==========
 
-def get_token_unidades_importacao():
+def get_token_unidades_importacao(id_unidade=None):
     """
-    Retorna o DataFrame de tokens de importação.
-    Use esta função em vez de acessar TOKEN_UNIDADES_IMPORTACAO_DF diretamente.
+    Retorna o token de importação de uma unidade específica.
+    Se id_unidade for None, retorna o DataFrame completo (compatibilidade).
+    
+    Args:
+        id_unidade: ID da unidade (opcional)
+    
+    Returns:
+        str: Token da unidade (se id_unidade fornecido)
+        DataFrame: Todos os tokens (se id_unidade for None)
     """
-    return carregar_tokens_importacao()
+    df = carregar_tokens_importacao()
+    
+    # Se não passar ID, retorna o DataFrame completo (compatibilidade com código antigo)
+    if id_unidade is None:
+        return df
+    
+    # Filtra pelo ID da unidade
+    try:
+        token_row = df[df['id'] == id_unidade]
+        
+        if token_row.empty:
+            st.error(f"❌ Token não encontrado para unidade ID: {id_unidade}")
+            return None
+        
+        token = token_row.iloc[0]['token']
+        
+        if pd.isna(token) or str(token).strip() == "":
+            st.error(f"❌ Token vazio para unidade ID: {id_unidade}")
+            return None
+        
+        return str(token).strip()
+        
+    except KeyError as e:
+        st.error(f"❌ Coluna não encontrada no Excel: {e}")
+        st.info("💡 Verifique se as colunas 'id' e 'token' existem no arquivo")
+        return None
+    except Exception as e:
+        st.error(f"❌ Erro ao buscar token: {e}")
+        return None
 
 
-def get_token_unidades_exportacao():
+def get_token_unidades_exportacao(id_unidade=None):
     """
-    Retorna o DataFrame de tokens de exportação.
-    Use esta função em vez de acessar TOKEN_UNIDADES_EXPORTACAO_DF diretamente.
+    Retorna o token de exportação de uma unidade específica.
+    Se id_unidade for None, retorna o DataFrame completo (compatibilidade).
+    
+    Args:
+        id_unidade: ID da unidade (opcional)
+    
+    Returns:
+        str: Token da unidade (se id_unidade fornecido)
+        DataFrame: Todos os tokens (se id_unidade for None)
     """
-    return carregar_tokens_exportacao()
+    df = carregar_tokens_exportacao()
+    
+    # Se não passar ID, retorna o DataFrame completo (compatibilidade com código antigo)
+    if id_unidade is None:
+        return df
+    
+    # Filtra pelo ID da unidade
+    try:
+        token_row = df[df['id'] == id_unidade]
+        
+        if token_row.empty:
+            st.error(f"❌ Token não encontrado para unidade ID: {id_unidade}")
+            return None
+        
+        token = token_row.iloc[0]['token']
+        
+        if pd.isna(token) or str(token).strip() == "":
+            st.error(f"❌ Token vazio para unidade ID: {id_unidade}")
+            return None
+        
+        return str(token).strip()
+        
+    except KeyError as e:
+        st.error(f"❌ Coluna não encontrada no Excel: {e}")
+        st.info("💡 Verifique se as colunas 'id' e 'token' existem no arquivo")
+        return None
+    except Exception as e:
+        st.error(f"❌ Erro ao buscar token: {e}")
+        return None
 
 
 # ========== CREDENCIAIS DO GOOGLE (dos Secrets) ==========
