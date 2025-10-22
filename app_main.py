@@ -787,11 +787,14 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                 # Localização: Por volta da linha 700 do documento 1
                 # ============================================================================
 
-                # Inicializa a flag de download se não existir
+                # Inicializa as flags de controle
+                if 'zip_preparado' not in st.session_state:
+                    st.session_state['zip_preparado'] = False
+
                 if 'download_realizado' not in st.session_state:
                     st.session_state['download_realizado'] = False
 
-                # BOTÃO 3: Download dos Arquivos (habilitado após consolidação)
+                # BOTÃO 3: Preparar Download (habilitado após consolidação)
                 download_habilitado = (
                     consolidar_habilitado and 
                     st.session_state['consolidar'] and
@@ -799,7 +802,8 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                     len(st.session_state['formularios_data']) > 0
                 )
 
-                if st.button("📥 Fazer Download dos Arquivos", disabled=not download_habilitado):
+                # BOTÃO PARA PREPARAR O DOWNLOAD
+                if st.button("📥 Preparar Arquivos para Download", disabled=not download_habilitado):
                     if download_habilitado:
                         try:
                             st.info("📦 Preparando arquivos para download...")
@@ -815,24 +819,16 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                                 tamanho_zip = get_tamanho_legivel(len(zip_buffer.getvalue()))
                                 nome_zip = f"Relatorio_Coleta_{unidade}_{competencia_normalizada}.zip"
                                 
+                                # Salva os dados do ZIP na sessão
+                                st.session_state['zip_preparado'] = True
+                                st.session_state['zip_buffer'] = zip_buffer
+                                st.session_state['zip_nome'] = nome_zip
+                                st.session_state['zip_qtd_arquivos'] = qtd_arquivos
+                                st.session_state['zip_tamanho'] = tamanho_zip
+                                
                                 st.success(f"✅ Pacote pronto com {qtd_arquivos} arquivos ({tamanho_zip})")
-                                
-                                # Download button que marca como realizado
-                                st.download_button(
-                                    label=f"💾 Baixar Pacote Completo",
-                                    data=zip_buffer,
-                                    file_name=nome_zip,
-                                    mime="application/zip",
-                                    use_container_width=True,
-                                    type="primary",
-                                    key="btn_download_arquivos",
-                                    help=f"Download de {qtd_arquivos} arquivos • {tamanho_zip}"
-                                )
-                                
-                                # Marca como download realizado quando o botão é renderizado
-                                st.session_state['download_realizado'] = True
-                                
-                                st.info("💡 Após clicar no download acima, o botão de envio ao KPIH será habilitado")
+                                st.info("💡 Agora clique no botão de download que aparecerá abaixo")
+                                st.rerun()
                                 
                             else:
                                 st.error("❌ Nenhum arquivo encontrado para download")
@@ -850,6 +846,38 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                         else:
                             st.warning("⚠️ Aguardando consolidação ser concluída...")
 
+                # MOSTRA O BOTÃO DE DOWNLOAD SE O ZIP FOI PREPARADO
+                if st.session_state.get('zip_preparado', False):
+                    st.markdown("---")
+                    
+                    zip_buffer = st.session_state.get('zip_buffer')
+                    nome_zip = st.session_state.get('zip_nome')
+                    qtd_arquivos = st.session_state.get('zip_qtd_arquivos')
+                    tamanho_zip = st.session_state.get('zip_tamanho')
+                    
+                    # Função callback que será chamada QUANDO o usuário clicar no download
+                    def marcar_download_realizado():
+                        st.session_state['download_realizado'] = True
+                    
+                    # Botão de download
+                    st.download_button(
+                        label=f"💾 Baixar Pacote Completo ({qtd_arquivos} arquivos • {tamanho_zip})",
+                        data=zip_buffer,
+                        file_name=nome_zip,
+                        mime="application/zip",
+                        use_container_width=True,
+                        type="primary",
+                        key="btn_download_arquivos",
+                        on_click=marcar_download_realizado,
+                        help=f"Clique para baixar os {qtd_arquivos} arquivos consolidados"
+                    )
+                    
+                    # Mensagem de status
+                    if st.session_state.get('download_realizado', False):
+                        st.success("✅ Download concluído! Agora você pode enviar os dados ao KPIH")
+                    else:
+                        st.info("👆 Clique no botão acima para fazer o download dos arquivos")
+
                 st.markdown("---")
 
                 envio_habilitado = (
@@ -861,7 +889,7 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                 )
 
                 # Botão de envio para KPIH - só habilitado após consolidação
-                if st.button("🚀 Enviar dados para KPIH", disabled=not st.session_state['consolidar']):
+                if st.button("🚀 Enviar dados para KPIH", disabled=not envio_habilitado):
                     if envio_habilitado:
                         try:
                             # === SEÇÃO 1: EXECUTAR API DE CENTRO DE CUSTO ===
