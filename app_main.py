@@ -1508,19 +1508,19 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                 
                 # debig para ver os formulario que traz da api e quais estão sendo salvo na memoria do streamlit
 
-                st.markdown("### 🔍 DEBUG - Formulários na Memória")
-                formularios_data = st.session_state.get('formularios_data', {})
+                # st.markdown("### 🔍 DEBUG - Formulários na Memória")
+                # formularios_data = st.session_state.get('formularios_data', {})
 
-                st.write(f"**Total:** {len(formularios_data)} formulários")
+                # st.write(f"**Total:** {len(formularios_data)} formulários")
 
-                for nome in formularios_data.keys():
-                    st.write(f"- `{nome}`")
+                # for nome in formularios_data.keys():
+                #     st.write(f"- `{nome}`")
 
                 # PASSO 2: Executar tratativa de criticidade
                 resultado_tratativa_criticidade_api = tratativa_criticidade_api(OUTPUT_DIR, competencia_normalizada)
                 
                 if resultado_tratativa_criticidade_api:
-                    st.info("✅ Tratativa de criticidade concluída")
+                    # st.info("✅ Tratativa de criticidade concluída")
 
                     # PASSO 3: RECARREGAR APENAS A VERSÃO ATUALIZADA
                     arquivo_criticidade = os.path.join(OUTPUT_DIR, f"Area_Criticidade_API_{competencia_normalizada}.csv")
@@ -1546,7 +1546,7 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                 if st.session_state.get('consolidar', False) and resultado_tratativa_criticidade_api:
                     # se a condição for atendida ou seja se for TRUE:
                     st.markdown("---") # cria uma linha 
-                    st.markdown("## 📊 Consolidação Final") # cria esse texto
+                    # st.markdown("## 📊 Consolidação Final") # cria esse texto
                     
                     #NOVA VALIDAÇÃO - adicionar antes do if st.session_state['formularios_data']:
                     dados_formularios = st.session_state.get('formularios_data', {})
@@ -1601,12 +1601,12 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                             st.info("✏️ Dados de criticidade preenchidos manualmente - usando as 3 versões")
 
                         # === PROCESSAMENTO DOS FORMULÁRIOS ===
-                        st.markdown("#### 📋 Processando formulários...")
+                        # st.markdown("#### 📋 Processando formulários...")
 
                         for nome, df in st.session_state['formularios_data'].items():
                             # Pula os formulários da lista de ignorados
                             if nome in formularios_a_ignorar:
-                                st.info(f"  ⏭️ Pulando: {nome}")
+                                # st.info(f"  ⏭️ Pulando: {nome}")
                                 continue
                             
                             df_limpo = df.copy()
@@ -1615,12 +1615,12 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                             if not df_limpo.empty:
                                 dfs_para_consolidar.append(df_limpo)
                                 formularios_consolidados.append(nome)
-                                st.success(f"  ✅ Adicionado: {nome} ({len(df_limpo)} registros)")
+                                # st.success(f"  ✅ Adicionado: {nome} ({len(df_limpo)} registros)")
                             else:
                                 st.warning(f"  ⚠️ Sem dados válidos: {nome}")
 
                         # === ADICIONA CÁLCULO DE ÁGUA ===
-                        st.markdown("#### 💧 Processando cálculo de água...")
+                        # st.markdown("#### 💧 Processando cálculo de água...")
 
                         if st.session_state.get('resultado_calculo_agua') is not None:
                             df_agua = st.session_state['resultado_calculo_agua'].copy()
@@ -1630,7 +1630,7 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                                 df_agua['Quantidade'] = df_agua['Quantidade'].apply(lambda x: f"{x:.2f}".replace(".", ","))
                                 dfs_para_consolidar.append(df_agua)
                                 formularios_consolidados.append("Consumo_Agua")
-                                st.success(f"  ✅ Água: {len(df_agua)} registros")
+                                # st.success(f"  ✅ Água: {len(df_agua)} registros")
                             else:
                                 st.warning("  ⚠️ Dados de água sem registros válidos")
 

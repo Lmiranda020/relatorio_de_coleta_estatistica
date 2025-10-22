@@ -133,7 +133,7 @@ def tratativa_criticidade_api(output_dir, competencia):
         
         # 🔥 CRÍTICO: Remove a versão ANTIGA antes de salvar a nova
         if 'Area_Criticidade_API' in st.session_state.get('formularios_data', {}):
-            st.info("🔄 Removendo versão desatualizada da memória...")
+            # st.info("🔄 Removendo versão desatualizada da memória...")
             del st.session_state['formularios_data']['Area_Criticidade_API']
         
         # ✅ ATUALIZA O ARQUIVO PRINCIPAL NA MEMÓRIA (versão atualizada)
@@ -197,15 +197,15 @@ def tratativa_criticidade_api(output_dir, competencia):
         temp_container.empty()
         
         # Mensagem final de sucesso
-        st.success(f"✅ Tratativa concluída!")
-        st.success(f"📊 {registros_com_match} ponderações atualizadas")
-        st.success(f"📂 {len(arquivos_criados)} arquivos de criticidade criados")
+        # st.success(f"✅ Tratativa concluída!")
+        # st.success(f"📊 {registros_com_match} ponderações atualizadas")
+        # st.success(f"📂 {len(arquivos_criados)} arquivos de criticidade criados")
         
-        # Lista os arquivos criados
-        with st.expander("📋 Arquivos de criticidade criados"):
-            for form in arquivos_criados:
-                registros = len(st.session_state['formularios_data'][form])
-                st.write(f"• {form} ({registros} registros)")
+        # # Lista os arquivos criados
+        # with st.expander("📋 Arquivos de criticidade criados"):
+        #     for form in arquivos_criados:
+        #         registros = len(st.session_state['formularios_data'][form])
+        #         st.write(f"• {form} ({registros} registros)")
         
         return True
     
