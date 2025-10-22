@@ -1,12 +1,6 @@
-# ============================================================================
-# ARQUIVO: api_envio_de_dados_estatistica.py (VERSÃO MODIFICADA)
-# ============================================================================
-
 import requests
 import pandas as pd
 import json
-import os
-import glob
 import streamlit as st
 from datetime import datetime
 from data.limpeza_base_de_para_rpa_vs_kpih import (
@@ -14,75 +8,175 @@ from data.limpeza_base_de_para_rpa_vs_kpih import (
     obter_unidade_id_da_sessao
 )
 from api.api_centro_custo import ajustar_competencia
-import datetime
 from config.constants import get_token_unidades_importacao
 
 
-def encontrar_arquivo_consolidado(diretorio_saida, unidade, competencia):
-    """Encontra o arquivo consolidado mais recente no diretório especificado."""
+def obter_dados_consolidados_da_memoria():
+    """
+    Busca os dados consolidados diretamente do session_state.
+    Retorna o DataFrame se existir, None caso contrário.
+    """
     try:
-        padrao_arquivo = f"CONSOLIDADO_{unidade}_{competencia}*.csv"
-        padrao_arquivo = padrao_arquivo.replace("/", "-").replace(" ", "_")
+        # Opção 1: Dados consolidados já preparados
+        if 'dados_consolidados' in st.session_state:
+            df = st.session_state['dados_consolidados']
+            if isinstance(df, pd.DataFrame) and not df.empty:
+                st.success(f"✅ Dados consolidados encontrados na memória: {len(df)} registros")
+                return df
         
-        caminho_busca = os.path.join(diretorio_saida, padrao_arquivo)
-        arquivos_encontrados = glob.glob(caminho_busca)
+        # Opção 2: DataFrame consolidado direto
+        if 'df_consolidado' in st.session_state:
+            df = st.session_state['df_consolidado']
+            if isinstance(df, pd.DataFrame) and not df.empty:
+                st.success(f"✅ DataFrame consolidado encontrado: {len(df)} registros")
+                return df
         
-        if not arquivos_encontrados:
-            st.error(f"❌ Nenhum arquivo consolidado encontrado: {caminho_busca}")
-            return None
+        # Opção 3: Buscar nos dados dos formulários e consolidar na hora
+        if 'formularios_data' in st.session_state:
+            formularios = st.session_state['formularios_data']
+            if formularios:
+                st.info("🔄 Consolidando dados dos formulários...")
+                df_consolidado = consolidar_formularios(formularios)
+                if df_consolidado is not None and not df_consolidado.empty:
+                    st.success(f"✅ Dados consolidados a partir dos formulários: {len(df_consolidado)} registros")
+                    # Salva para próximas consultas
+                    st.session_state['dados_consolidados'] = df_consolidado
+                    return df_consolidado
         
-        arquivo_mais_recente = max(arquivos_encontrados, key=os.path.getctime)
-        st.info(f"📁 Arquivo encontrado: {os.path.basename(arquivo_mais_recente)}")
-        
-        return arquivo_mais_recente
+        st.error("❌ Nenhum dado consolidado encontrado na memória!")
+        st.info("💡 Certifique-se de que os formulários foram processados antes de enviar para a API")
+        return None
         
     except Exception as e:
-        st.error(f"❌ Erro ao buscar arquivo consolidado: {str(e)}")
+        st.error(f"❌ Erro ao buscar dados consolidados: {e}")
         return None
 
 
-def carregar_e_transformar_consolidado(caminho_arquivo):
-    """Carrega o arquivo consolidado CSV e transforma para o formato necessário da API."""
-    try:
-        df = pd.read_csv(caminho_arquivo, sep=';', encoding='utf-8-sig')
-        st.success(f"✅ Arquivo carregado: {len(df)} registros")
+def consolidar_formularios(formularios_data):
+    """
+    Consolida dados de múltiplos formulários em um único DataFrame.
+    
+    Args:
+        formularios_data: Dicionário com dados dos formulários
         
+    Returns:
+        DataFrame consolidado ou None
+    """
+    try:
+        if not formularios_data:
+            return None
+        
+        lista_dfs = []
+        
+        for nome_formulario, dados in formularios_data.items():
+            if isinstance(dados, pd.DataFrame):
+                df_temp = dados.copy()
+                df_temp['formulario_origem'] = nome_formulario
+                lista_dfs.append(df_temp)
+        
+        if not lista_dfs:
+            return None
+        
+        df_consolidado = pd.concat(lista_dfs, ignore_index=True)
+        
+        # Garante que as colunas necessárias existem
+        colunas_necessarias = ['Competência', 'Ponderação', 'Centro de Custo', 'Quantidade']
+        if not all(col in df_consolidado.columns for col in colunas_necessarias):
+            st.warning(f"⚠️ Colunas necessárias não encontradas. Disponíveis: {df_consolidado.columns.tolist()}")
+            return None
+        
+        return df_consolidado
+        
+    except Exception as e:
+        st.error(f"❌ Erro ao consolidar formulários: {e}")
+        return None
+
+
+def transformar_dataframe_para_api(df):
+    """
+    Transforma o DataFrame consolidado para o formato da API.
+    
+    Args:
+        df: DataFrame com colunas 'Competência', 'Ponderação', 'Centro de Custo', 'Quantidade'
+        
+    Returns:
+        Lista de dicionários no formato da API
+    """
+    try:
         colunas_esperadas = ['Competência', 'Ponderação', 'Centro de Custo', 'Quantidade']
         colunas_faltantes = [col for col in colunas_esperadas if col not in df.columns]
         
         if colunas_faltantes:
-            st.error(f"❌ Colunas faltantes no arquivo: {colunas_faltantes}")
+            st.error(f"❌ Colunas faltantes no DataFrame: {colunas_faltantes}")
+            st.info(f"Colunas disponíveis: {df.columns.tolist()}")
             return None
         
         dados_api = []
+        registros_ignorados = 0
         
-        for _, row in df.iterrows():
-            quantidade_str = str(row['Quantidade']).replace(',', '.')
+        for idx, row in df.iterrows():
             try:
-                valor_limpo = quantidade_str.replace('.', '').replace(',', '.')
-                quantidade = float(valor_limpo)
-            except (ValueError, TypeError):
-                st.warning(f"⚠️ Quantidade inválida ignorada: {row['Quantidade']} para {row['Centro de Custo']}")
-                continue
-            
-            if quantidade > 0:
+                # Limpar e validar ponderação
+                ponderacao = str(row['Ponderação']).strip()
+                
+                # Limpar e validar centro de custo
+                centro_custo = str(row['Centro de Custo']).strip()
+                
+                # Limpar e converter quantidade
+                quantidade_str = str(row['Quantidade']).replace(',', '.')
+                try:
+                    # Remove separadores de milhar e converte
+                    valor_limpo = quantidade_str.replace('.', '', quantidade_str.count('.') - 1)
+                    quantidade = float(valor_limpo)
+                except (ValueError, TypeError):
+                    registros_ignorados += 1
+                    continue
+                
+                # Validações
+                if pd.isna(ponderacao) or ponderacao.lower() in ['nan', 'none', '']:
+                    registros_ignorados += 1
+                    continue
+                
+                if pd.isna(centro_custo) or centro_custo.lower() in ['nan', 'none', '']:
+                    registros_ignorados += 1
+                    continue
+                
+                if quantidade <= 0:
+                    registros_ignorados += 1
+                    continue
+                
+                # Adiciona registro válido
                 registro_api = {
-                    "ponderacaoDeRateio": str(row['Ponderação']).strip(),
-                    "centroDeCusto": str(row['Centro de Custo']).strip(),
+                    "ponderacaoDeRateio": ponderacao,
+                    "centroDeCusto": centro_custo,
                     "quantidade": quantidade
                 }
                 dados_api.append(registro_api)
+                
+            except Exception as e:
+                registros_ignorados += 1
+                if registros_ignorados <= 3:
+                    st.warning(f"⚠️ Linha {idx + 1} com erro: {str(e)}")
+                continue
         
-        st.info(f"🔄 {len(dados_api)} registros válidos preparados para envio")
+        if registros_ignorados > 0:
+            st.info(f"ℹ️ {registros_ignorados} registro(s) ignorado(s)")
         
-        if dados_api:
-            with st.expander("👀 Preview dos dados para API"):
-                st.json(dados_api[:3])
+        if not dados_api:
+            st.error("❌ Nenhum registro válido encontrado após transformação")
+            return None
+        
+        st.success(f"✅ {len(dados_api)} registros válidos preparados para envio")
+        
+        # Mostra preview
+        with st.expander("👀 Preview dos dados para API"):
+            st.json(dados_api[:3])
         
         return dados_api
         
     except Exception as e:
-        st.error(f"❌ Erro ao processar arquivo: {str(e)}")
+        st.error(f"❌ Erro ao transformar dados: {str(e)}")
+        st.exception(e)
         return None
 
 
@@ -99,9 +193,7 @@ def analisar_resposta_api(response_json, total_registros_enviados):
     
     try:
         if isinstance(response_json, dict):
-            # Verifica diferentes formatos de resposta
             if 'errors' in response_json:
-                # Formato: {"message": "...", "errors": {"0": "erro1", "1": "erro2"}}
                 errors_dict = response_json['errors']
                 if isinstance(errors_dict, dict):
                     resultado['erros_detalhados'] = [
@@ -113,12 +205,10 @@ def analisar_resposta_api(response_json, total_registros_enviados):
                     resultado['erros_detalhados'] = errors_dict
                     resultado['total_rejeitados'] = len(errors_dict)
             
-            # Também verifica 'erros' (português)
             elif 'erros' in response_json and isinstance(response_json['erros'], list):
                 resultado['erros_detalhados'] = response_json['erros']
                 resultado['total_rejeitados'] = len(response_json['erros'])
             
-            # Calcula aceitos
             resultado['total_aceitos'] = total_registros_enviados - resultado['total_rejeitados']
         
         resultado['parcial'] = resultado['total_rejeitados'] > 0
@@ -143,6 +233,8 @@ def analisar_resposta_api(response_json, total_registros_enviados):
 def enviar_consolidado_para_api():
     """
     Envia dados consolidados (estatísticas) para a API.
+    BUSCA DADOS DA MEMÓRIA (session_state) ao invés do sistema de arquivos.
+    
     RETORNA: (sucesso: bool, dados_extras: dict, analise: dict)
     """
     try:
@@ -150,6 +242,7 @@ def enviar_consolidado_para_api():
         
         debug_mode = st.checkbox("🐛 Modo Debug", value=True)
         
+        # Obter informações da sessão
         unidade_id = obter_unidade_id_da_sessao()
         if not unidade_id:
             st.error("❌ ID da unidade não encontrado.")
@@ -166,27 +259,26 @@ def enviar_consolidado_para_api():
         st.info(f"👤 Usuário: {email_usuario}")
         st.info(f"🏢 Unidade: {unidade_usuario}")
         st.info(f"📅 Competência: {competencia_usuario}")
-
-        competencia_usuario_p_payload = ajustar_competencia(competencia_usuario)
         
-        diretorio_saida = st.session_state.get('output_dir', None)
+        competencia_ajustada = ajustar_competencia(competencia_usuario)
         
-        if not diretorio_saida or not os.path.exists(diretorio_saida):
-            st.error(f"❌ Diretório de saída não encontrado: {diretorio_saida}")
+        # 🔥 BUSCAR DADOS DA MEMÓRIA AO INVÉS DE ARQUIVO
+        st.info("🔍 Buscando dados consolidados na memória...")
+        df_consolidado = obter_dados_consolidados_da_memoria()
+        
+        if df_consolidado is None or df_consolidado.empty:
+            st.error("❌ Nenhum dado consolidado disponível para envio!")
             return False, {}, {}
         
-        st.info("🔍 Buscando arquivo consolidado...")
-        caminho_arquivo = encontrar_arquivo_consolidado(diretorio_saida, unidade_usuario, competencia_usuario)
-        
-        if not caminho_arquivo:
-            return False, {}, {}
-        
-        st.info("🔄 Carregando e transformando dados...")
-        dados_para_envio = carregar_e_transformar_consolidado(caminho_arquivo)
+        # Transformar DataFrame para formato da API
+        st.info("🔄 Transformando dados para formato da API...")
+        dados_para_envio = transformar_dataframe_para_api(df_consolidado)
         
         if not dados_para_envio:
+            st.error("❌ Falha ao transformar dados para API")
             return False, {}, {}
         
+        # Obter token
         st.info("🔑 Obtendo token de autenticação...")
         token = get_token_unidades_importacao(unidade_id)
         
@@ -196,8 +288,9 @@ def enviar_consolidado_para_api():
         
         st.success("✅ Token obtido com sucesso")
         
+        # Montar payload
         payload = {
-            "competencia": competencia_usuario_p_payload,
+            "competencia": competencia_ajustada,
             "dados": dados_para_envio
         }
         
@@ -206,12 +299,11 @@ def enviar_consolidado_para_api():
             st.write(f"**Quantidade de registros:** {len(payload['dados'])}")
             st.write(f"**Token:** ...{str(token)[-10:] if token else 'VAZIO'}")
             
-            payload_exemplo = {
-                "competencia": payload['competencia'],
-                "dados": payload['dados'][:2] if len(payload['dados']) > 2 else payload['dados']
-            }
-            st.json(payload_exemplo)
+            if payload['dados']:
+                st.write("**Exemplo do primeiro registro:**")
+                st.json(payload['dados'][0])
         
+        # Validar JSON
         try:
             json_test = json.dumps(payload, ensure_ascii=False)
             st.success("✅ Payload JSON válido")
@@ -226,6 +318,7 @@ def enviar_consolidado_para_api():
                 st.write(f"**Formulários data:** {list(st.session_state.get('formularios_data', {}).keys())}")
                 st.write(f"**Unidade ID:** {unidade_id}")
         
+        # URL da API
         url = 'https://backoffice.kpih.com.br:8000/api/v2/kpih/estatisticas'
         
         headers = {
@@ -233,13 +326,14 @@ def enviar_consolidado_para_api():
             "Content-Type": "application/json"
         }
         
+        # Dados extras para registro
         dados_extras = {
             'formularios_preenchidos': list(st.session_state.get('formularios_data', {}).keys()),
             'navegador': 'streamlit_app',
-            'timestamp_envio_api_estatisticas': datetime.datetime.now().isoformat(),
+            'timestamp_envio_api_estatisticas': datetime.now().isoformat(),
             'unidade_id': unidade_id,
-            'arquivo_consolidado_enviado': os.path.basename(caminho_arquivo),
-            'total_registros_enviados_estatisticas': len(dados_para_envio)
+            'total_registros_enviados_estatisticas': len(dados_para_envio),
+            'origem_dados': 'memoria_session_state'  # 🔥 Marcador importante
         }
         
         with st.spinner("📡 Enviando dados para a API..."):
@@ -264,25 +358,25 @@ def enviar_consolidado_para_api():
                     except:
                         resposta_api = {"mensagem": response.text}
                     
-                    # Verifica se é um envio parcial através da mensagem
                     mensagem_api = resposta_api.get('message', resposta_api.get('mensagem', ''))
                     is_parcial = 'parcialmente' in mensagem_api.lower()
                     
                     analise = analisar_resposta_api(resposta_api, len(dados_para_envio))
                     dados_extras['analise_envio_estatisticas'] = analise
                     
-                    # 🔥 SALVAR NO SESSION_STATE PARA NÃO PERDER
+                    # 🔥 SALVAR NO SESSION_STATE
                     st.session_state['resultado_envio_estatisticas'] = {
                         'sucesso': True,
                         'analise': analise,
                         'resposta_api': resposta_api,
-                        'timestamp': datetime.datetime.now().isoformat()
+                        'timestamp': datetime.now().isoformat()
                     }
-
+                    
+                    st.success(analise['mensagem_resumo'])
+                    
                     with st.expander("📄 Resposta completa da API"):
                         st.json(resposta_api)
-                        # st.stop()
-
+                    
                     return True, dados_extras, analise
                     
                 else:
