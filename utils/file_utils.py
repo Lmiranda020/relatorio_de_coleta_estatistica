@@ -252,10 +252,11 @@ def criar_zip_simples( competencia_normalizada, unidade):
     # st.markdown("### 🔍 DEBUG - Formulários na Memória")
     formularios_data = st.session_state.get('formularios_data', {})
 
-    st.write(f"**Total:** {len(formularios_data)} formulários")
+    #debug que mostra os nomes dos formulários carregados na memória
+    # st.write(f"**Total:** {len(formularios_data)} formulários")
 
-    for nome in formularios_data.keys():
-        st.write(f"- `{nome}`")
+    # for nome in formularios_data.keys():
+    #     st.write(f"- `{nome}`")
 
     
     zip_buffer = BytesIO()
