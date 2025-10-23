@@ -262,7 +262,7 @@ def enviar_consolidado_para_api():
         
         competencia_ajustada = ajustar_competencia(competencia_usuario)
         
-        # 🔥 BUSCAR DADOS DA MEMÓRIA AO INVÉS DE ARQUIVO
+        # BUSCAR DADOS DA MEMÓRIA AO INVÉS DE ARQUIVO
         st.info("🔍 Buscando dados consolidados na memória...")
         df_consolidado = obter_dados_consolidados_da_memoria()
         

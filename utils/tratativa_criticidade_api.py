@@ -73,10 +73,10 @@ def tratativa_criticidade_api(output_dir, competencia):
         with temp_container.container():
             st.info(f"📊 Arquivo carregado com {len(df_original)} registros")
         
-        # 🔥 LIMPEZA: Remove espaços extras dos nomes das colunas
+        # LIMPEZA: Remove espaços extras dos nomes das colunas
         df_original.columns = df_original.columns.str.strip()
         
-        # 🔥 LIMPEZA: Normaliza a coluna Centro de Custo
+        # LIMPEZA: Normaliza a coluna Centro de Custo
         if 'Centro de Custo' not in df_original.columns:
             temp_container.empty()
             st.error(f"Erro: Coluna 'Centro de Custo' não encontrada")
@@ -100,7 +100,7 @@ def tratativa_criticidade_api(output_dir, competencia):
         #     with st.expander("📋 Amostra do arquivo de de-para"):
         #         st.write(de_para_criticidade[['Centro de Custo', 'Nova Ponderação']].head(10))
         
-        # 🔥 MERGE: Faz o VLOOKUP
+        # MERGE: Faz o VLOOKUP
         with temp_container.container():
             st.info(f"🔄 Fazendo correspondência entre arquivos...")
         
@@ -124,14 +124,14 @@ def tratativa_criticidade_api(output_dir, competencia):
         #         with st.expander("Ver Centros de Custo sem match"):
         #             st.write(registros_sem_match[['Centro de Custo', 'Ponderação']].drop_duplicates())
         
-        # 🔥 ATUALIZAÇÃO: Atualiza a coluna Ponderação onde houver match
+        # ATUALIZAÇÃO: Atualiza a coluna Ponderação onde houver match
         mask = df_atualizado['Nova Ponderação'].notna()
         df_atualizado.loc[mask, 'Ponderação'] = df_atualizado.loc[mask, 'Nova Ponderação']
         
         # Remove a coluna auxiliar do merge
         df_final = df_atualizado.drop(columns=['Nova Ponderação'])
         
-        # 🔥 CRÍTICO: Remove a versão ANTIGA antes de salvar a nova
+        # CRÍTICO: Remove a versão ANTIGA antes de salvar a nova
         if 'Area_Criticidade_API' in st.session_state.get('formularios_data', {}):
             # st.info("🔄 Removendo versão desatualizada da memória...")
             del st.session_state['formularios_data']['Area_Criticidade_API']
@@ -149,13 +149,13 @@ def tratativa_criticidade_api(output_dir, competencia):
             st.info(f"💾 Arquivo principal salvo e atualizado na memória")
         
         # ============================================================
-        # 🔥 FILTRAR E SALVAR OS 3 FORMULÁRIOS
+        # FILTRAR E SALVAR OS 3 FORMULÁRIOS
         # ============================================================
         
         with temp_container.container():
             st.info("📂 Criando os 3 arquivos filtrados por tipo de criticidade...")
         
-        # 🔥 CORREÇÃO: Mapeamento atualizado com textos EXATOS
+        # CORREÇÃO: Mapeamento atualizado com textos EXATOS
         mapeamento_criticidade = {
             "Área (m²) x Nível de Criticidade (Área Crítica - I)": "Área Crítica - I",
             "Área (m²) x Nível de Criticidade (Área Semi Crítica)": "Área Semi Crítica",
@@ -165,7 +165,7 @@ def tratativa_criticidade_api(output_dir, competencia):
         arquivos_criados = []
         
         for nome_formulario, texto_filtro in mapeamento_criticidade.items():
-            # 🔥 FILTRO CORRIGIDO: Normaliza antes de comparar
+            # FILTRO CORRIGIDO: Normaliza antes de comparar
             df_filtrado = df_final[
                 df_final['Ponderação'].astype(str).str.strip().str.lower() == texto_filtro.lower()
             ].copy()
