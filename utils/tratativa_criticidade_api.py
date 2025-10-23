@@ -91,14 +91,14 @@ def tratativa_criticidade_api(output_dir, competencia):
             st.warning(f"Aviso: Coluna 'Ponderação' não encontrada - criando coluna vazia")
             df_original['Ponderação'] = None
         
-        # 🔥 DEBUG: Mostra amostra dos dados ANTES do merge
-        with temp_container.container():
-            st.info("🔍 DEBUG: Verificando dados antes do merge...")
-            with st.expander("📊 Amostra de Centros de Custo no arquivo original"):
-                st.write(df_original[['Centro de Custo', 'Ponderação']].head(10))
+        # # DEBUG: Mostra amostra dos dados ANTES do merge
+        # with temp_container.container():
+        #     st.info("🔍 DEBUG: Verificando dados antes do merge...")
+        #     with st.expander("📊 Amostra de Centros de Custo no arquivo original"):
+        #         st.write(df_original[['Centro de Custo', 'Ponderação']].head(10))
             
-            with st.expander("📋 Amostra do arquivo de de-para"):
-                st.write(de_para_criticidade[['Centro de Custo', 'Nova Ponderação']].head(10))
+        #     with st.expander("📋 Amostra do arquivo de de-para"):
+        #         st.write(de_para_criticidade[['Centro de Custo', 'Nova Ponderação']].head(10))
         
         # 🔥 MERGE: Faz o VLOOKUP
         with temp_container.container():
@@ -116,13 +116,13 @@ def tratativa_criticidade_api(output_dir, competencia):
         with temp_container.container():
             st.info(f"🎯 Encontrados {registros_com_match} registros com correspondência")
         
-        # 🔥 DEBUG: Mostra registros SEM match
-        registros_sem_match = df_atualizado[df_atualizado['Nova Ponderação'].isna()]
-        if not registros_sem_match.empty:
-            with temp_container.container():
-                st.warning(f"⚠️ {len(registros_sem_match)} registros SEM correspondência no de-para")
-                with st.expander("Ver Centros de Custo sem match"):
-                    st.write(registros_sem_match[['Centro de Custo', 'Ponderação']].drop_duplicates())
+        # # DEBUG: Mostra registros SEM match
+        # registros_sem_match = df_atualizado[df_atualizado['Nova Ponderação'].isna()]
+        # if not registros_sem_match.empty:
+        #     with temp_container.container():
+        #         st.warning(f"⚠️ {len(registros_sem_match)} registros SEM correspondência no de-para")
+        #         with st.expander("Ver Centros de Custo sem match"):
+        #             st.write(registros_sem_match[['Centro de Custo', 'Ponderação']].drop_duplicates())
         
         # 🔥 ATUALIZAÇÃO: Atualiza a coluna Ponderação onde houver match
         mask = df_atualizado['Nova Ponderação'].notna()
@@ -187,11 +187,11 @@ def tratativa_criticidade_api(output_dir, competencia):
                 with temp_container.container():
                     st.warning(f"  ⚠️ {nome_formulario}: Nenhum registro encontrado com '{texto_filtro}'")
                 
-                # 🔥 DEBUG: Mostra quais ponderações existem
-                ponderacoes_unicas = df_final['Ponderação'].unique()
-                with st.expander(f"🔍 Ver ponderações disponíveis no arquivo"):
-                    for pond in ponderacoes_unicas:
-                        st.write(f"• `{pond}`")
+                # # DEBUG: Mostra quais ponderações existem
+                # ponderacoes_unicas = df_final['Ponderação'].unique()
+                # with st.expander(f"🔍 Ver ponderações disponíveis no arquivo"):
+                #     for pond in ponderacoes_unicas:
+                #         st.write(f"• `{pond}`")
         
         # Limpa mensagens temporárias
         temp_container.empty()

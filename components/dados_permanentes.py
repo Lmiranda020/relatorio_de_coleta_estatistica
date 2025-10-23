@@ -221,15 +221,15 @@ def filtrar_formularios_permanentes(dados_api, lista_formularios_permanentes):
                 st.warning(f"⚠️ {formulario_permanente}: Nenhum item encontrado")
                 dados_filtrados[formulario_permanente] = []
         
-        # DEBUG: Mostrar todos os critérios disponíveis na API
-        with st.expander("🔎 Debug: Critérios de Rateio disponíveis"):
-            criterios_unicos = sorted(set(
-                item.get('criterioDeRateioDescr', '') 
-                for item in items 
-                if item.get('criterioDeRateioDescr')
-            ))
-            for criterio in criterios_unicos:
-                st.write(f"• {criterio}")
+        # # DEBUG: Mostrar todos os critérios disponíveis na API
+        # with st.expander("🔎 Debug: Critérios de Rateio disponíveis"):
+        #     criterios_unicos = sorted(set(
+        #         item.get('criterioDeRateioDescr', '') 
+        #         for item in items 
+        #         if item.get('criterioDeRateioDescr')
+        #     ))
+        #     for criterio in criterios_unicos:
+        #         st.write(f"• {criterio}")
         
         return dados_filtrados
         
@@ -519,10 +519,10 @@ def processar_dados_permanentes_completo():
         
         st.success("Dados obtidos da API com sucesso")
         
-        # Debug: mostra estrutura dos dados recebidos
-        with st.expander("Estrutura dos dados recebidos (Debug)"):
-            st.write("Chaves principais:", list(dados_api.keys()) if isinstance(dados_api, dict) else "Não é dict")
-            st.write("Primeiros dados:", str(dados_api)[:500] + "..." if len(str(dados_api)) > 500 else str(dados_api))
+        # # Debug: mostra estrutura dos dados recebidos
+        # with st.expander("Estrutura dos dados recebidos (Debug)"):
+        #     st.write("Chaves principais:", list(dados_api.keys()) if isinstance(dados_api, dict) else "Não é dict")
+        #     st.write("Primeiros dados:", str(dados_api)[:500] + "..." if len(str(dados_api)) > 500 else str(dados_api))
         
         # 5. Filtrar apenas formulários permanentes
         dados_filtrados = filtrar_formularios_permanentes(dados_api, formularios_permanentes)

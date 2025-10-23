@@ -1822,17 +1822,17 @@ else: # agora se estiver logado, ou seja, se a chave usuario_logado for VERDADEI
                                 with st.expander("👀 Ver preview dos dados"):
                                     st.dataframe(df_final.head(20))
                                 
-                                # Debug para confirmar salvamento
-                                with st.expander("🔍 Debug - Dados na Memória"):
-                                    st.write("**Chaves criadas no session_state:**")
-                                    st.write(f"✅ 'dados_consolidados': {len(st.session_state.get('dados_consolidados', pd.DataFrame()))} linhas")
-                                    st.write(f"✅ 'df_consolidado': {len(st.session_state.get('df_consolidado', pd.DataFrame()))} linhas")
+                                # # Debug para confirmar salvamento
+                                # with st.expander("🔍 Debug - Dados na Memória"):
+                                #     st.write("**Chaves criadas no session_state:**")
+                                #     st.write(f"✅ 'dados_consolidados': {len(st.session_state.get('dados_consolidados', pd.DataFrame()))} linhas")
+                                #     st.write(f"✅ 'df_consolidado': {len(st.session_state.get('df_consolidado', pd.DataFrame()))} linhas")
                                     
-                                    metadata = st.session_state.get('consolidado_metadata', {})
-                                    st.write(f"✅ 'consolidado_metadata':")
-                                    for key, value in metadata.items():
-                                        if key != 'formularios':  # Não mostra a lista completa
-                                            st.write(f"   • {key}: {value}")
+                                #     metadata = st.session_state.get('consolidado_metadata', {})
+                                #     st.write(f"✅ 'consolidado_metadata':")
+                                #     for key, value in metadata.items():
+                                #         if key != 'formularios':  # Não mostra a lista completa
+                                #             st.write(f"   • {key}: {value}")
                                 
                             except Exception as consolidate_error:
                                 st.error(f"❌ Erro ao consolidar dados: {str(consolidate_error)}")

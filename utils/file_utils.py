@@ -249,8 +249,8 @@ def criar_zip_simples( competencia_normalizada, unidade):
     """
     
     # Debug para ver os formulários que estão na memória
-    st.markdown("### 🔍 DEBUG - Formulários na Memória")
-    formularios_data = st.session_state.get('formularios_data', {})
+    # st.markdown("### 🔍 DEBUG - Formulários na Memória")
+    # formularios_data = st.session_state.get('formularios_data', {})
 
     st.write(f"**Total:** {len(formularios_data)} formulários")
 

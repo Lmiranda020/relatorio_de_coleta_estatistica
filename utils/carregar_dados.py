@@ -24,10 +24,10 @@ def carregar_dados_salvos(competencia, unidade_selecionada, nome_formulario):
         # # DEBUG: Mostra as colunas disponíveis
         # st.write(f"**DEBUG - Colunas disponíveis no DataFrame salvo:** {list(df_salvo.columns)}")
         
-        # Verifica se pelo menos a coluna Quantidade existe
-        if 'Quantidade' not in df_salvo.columns:
-            st.write(f"**DEBUG - Coluna 'Quantidade' não encontrada**")
-            return {}
+        # # Verifica se pelo menos a coluna Quantidade existe
+        # if 'Quantidade' not in df_salvo.columns:
+        #     st.write(f"**DEBUG - Coluna 'Quantidade' não encontrada**")
+        #     return {}
         
         # Filtra pelos dados da competência e unidade específica
         df_filtrado = df_salvo.copy()

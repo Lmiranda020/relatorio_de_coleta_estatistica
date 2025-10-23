@@ -130,21 +130,21 @@ def de_para_produto():
                 "mapeamentos": mapeamentos_limpos
             }
 
-            # Debug detalhado
-            with st.expander("🔍 Detalhes da Requisição"):
-                st.write(f"**URL:** {url}")
-                st.write(f"**Token:** ...{str(token)[-10:] if token else 'VAZIO'}")
-                st.write(f"**Competência:** {payload['competencia']}")
-                st.write(f"**Quantidade de mapeamentos:** {len(payload['mapeamentos'])}")
+            # # Debug detalhado
+            # with st.expander("🔍 Detalhes da Requisição"):
+            #     st.write(f"**URL:** {url}")
+            #     st.write(f"**Token:** ...{str(token)[-10:] if token else 'VAZIO'}")
+            #     st.write(f"**Competência:** {payload['competencia']}")
+            #     st.write(f"**Quantidade de mapeamentos:** {len(payload['mapeamentos'])}")
                 
-                # Mostra exemplo do primeiro mapeamento
-                if payload['mapeamentos']:
-                    st.write(f"**Exemplo mapeamento:**")
-                    st.json(payload['mapeamentos'][0])
+            #     # Mostra exemplo do primeiro mapeamento
+            #     if payload['mapeamentos']:
+            #         st.write(f"**Exemplo mapeamento:**")
+            #         st.json(payload['mapeamentos'][0])
                 
-                # Mostra payload completo
-                st.write("**Payload completo:**")
-                st.json(payload)
+            #     # Mostra payload completo
+            #     st.write("**Payload completo:**")
+            #     st.json(payload)
             
             # Validar JSON
             try:

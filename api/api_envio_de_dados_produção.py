@@ -242,13 +242,13 @@ def enviar_producao_para_api():
             "dados": dados_para_envio
         }
         
-        # Debug do payload
-        with st.expander("🔍 Detalhes do Payload de Produção"):
-            st.write(f"**Competência:** {payload['competencia']}")
-            st.write(f"**Total de registros:** {len(payload['dados'])}")
-            if payload['dados']:
-                st.write("**Exemplo do primeiro registro:**")
-                st.json(payload['dados'][0])
+        # # Debug do payload
+        # with st.expander("🔍 Detalhes do Payload de Produção"):
+        #     st.write(f"**Competência:** {payload['competencia']}")
+        #     st.write(f"**Total de registros:** {len(payload['dados'])}")
+        #     if payload['dados']:
+        #         st.write("**Exemplo do primeiro registro:**")
+        #         st.json(payload['dados'][0])
         
         # URL e headers
         url = 'https://backoffice.kpih.com.br:8000/api/v2/kpih/producoes'

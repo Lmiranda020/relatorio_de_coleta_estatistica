@@ -240,7 +240,7 @@ def enviar_consolidado_para_api():
     try:
         st.title("📡 Envio de Dados Consolidados para API")
         
-        debug_mode = st.checkbox("🐛 Modo Debug", value=True)
+        # debug_mode = st.checkbox("🐛 Modo Debug", value=True)
         
         # Obter informações da sessão
         unidade_id = obter_unidade_id_da_sessao()
@@ -311,12 +311,12 @@ def enviar_consolidado_para_api():
             st.error(f"❌ Erro no JSON do payload: {json_err}")
             return False, {}, {}
         
-        if debug_mode:
-            with st.expander("🔍 DEBUG - Session State"):
-                st.write(f"**Email usuário:** {email_usuario}")
-                st.write(f"**Unidade usuário:** {unidade_usuario}")
-                st.write(f"**Formulários data:** {list(st.session_state.get('formularios_data', {}).keys())}")
-                st.write(f"**Unidade ID:** {unidade_id}")
+        # if debug_mode:
+        #     with st.expander("🔍 DEBUG - Session State"):
+        #         st.write(f"**Email usuário:** {email_usuario}")
+        #         st.write(f"**Unidade usuário:** {unidade_usuario}")
+        #         st.write(f"**Formulários data:** {list(st.session_state.get('formularios_data', {}).keys())}")
+        #         st.write(f"**Unidade ID:** {unidade_id}")
         
         # URL da API
         url = 'https://backoffice.kpih.com.br:8000/api/v2/kpih/estatisticas'
@@ -343,9 +343,9 @@ def enviar_consolidado_para_api():
                 
                 status_code = response.status_code
                 
-                if debug_mode:
-                    st.info(f"🐛 DEBUG - Status Code: {status_code}")
-                    st.info(f"🐛 DEBUG - Response Text: {response.text[:500]}...")
+                # if debug_mode:
+                #     st.info(f"🐛 DEBUG - Status Code: {status_code}")
+                #     st.info(f"🐛 DEBUG - Response Text: {response.text[:500]}...")
                 
                 st.info(f"📊 Status Code: {status_code}")
                 
@@ -406,8 +406,8 @@ def enviar_consolidado_para_api():
                 
             except requests.exceptions.RequestException as req_err:
                 st.error(f"🔥 Erro na requisição: {req_err}")
-                if debug_mode:
-                    st.exception(req_err)
+                # if debug_mode:
+                #     st.exception(req_err)
                 return False, {}, {}
                 
             except Exception as err:

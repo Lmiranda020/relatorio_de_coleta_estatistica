@@ -234,33 +234,33 @@ imagem_cejam = "assets/logo cejam.png"
 imagem_sus = "assets/logo sus.png"
 
 
-# ========== DEBUG: Mostrar status de carregamento ==========
+# # ========== DEBUG: Mostrar status de carregamento ==========
 
-def debug_secrets():
-    """
-    Função auxiliar para debugar o carregamento dos secrets
-    """
-    with st.expander("🔍 Debug: Status dos Secrets"):
-        st.write("**Secrets disponíveis:**")
-        try:
-            secrets_disponiveis = list(st.secrets.keys())
-            st.json(secrets_disponiveis)
+# def debug_secrets():
+#     """
+#     Função auxiliar para debugar o carregamento dos secrets
+#     """
+#     with st.expander("🔍 Debug: Status dos Secrets"):
+#         st.write("**Secrets disponíveis:**")
+#         try:
+#             secrets_disponiveis = list(st.secrets.keys())
+#             st.json(secrets_disponiveis)
             
-            st.write("\n**Status dos DataFrames:**")
+#             st.write("\n**Status dos DataFrames:**")
             
-            # Testa importação
-            df_imp = carregar_tokens_importacao()
-            st.write(f"- Tokens Importação: {len(df_imp)} linhas")
-            if not df_imp.empty:
-                st.write(f"  - Colunas: {list(df_imp.columns)}")
+#             # Testa importação
+#             df_imp = carregar_tokens_importacao()
+#             st.write(f"- Tokens Importação: {len(df_imp)} linhas")
+#             if not df_imp.empty:
+#                 st.write(f"  - Colunas: {list(df_imp.columns)}")
             
-            # Testa exportação
-            df_exp = carregar_tokens_exportacao()
-            st.write(f"- Tokens Exportação: {len(df_exp)} linhas")
-            if not df_exp.empty:
-                st.write(f"  - Colunas: {list(df_exp.columns)}")
+#             # Testa exportação
+#             df_exp = carregar_tokens_exportacao()
+#             st.write(f"- Tokens Exportação: {len(df_exp)} linhas")
+#             if not df_exp.empty:
+#                 st.write(f"  - Colunas: {list(df_exp.columns)}")
                 
-        except Exception as e:
-            st.error(f"Erro ao debugar: {e}")
-            import traceback
-            st.code(traceback.format_exc())
+#         except Exception as e:
+#             st.error(f"Erro ao debugar: {e}")
+#             import traceback
+#             st.code(traceback.format_exc())
