@@ -316,7 +316,6 @@ def enviar_consolidado_para_api():
                 st.write(f"**Email usuário:** {email_usuario}")
                 st.write(f"**Unidade usuário:** {unidade_usuario}")
                 st.write(f"**Formulários data:** {list(st.session_state.get('formularios_data', {}).keys())}")
-                st.stop()
                 st.write(f"**Unidade ID:** {unidade_id}")
         
         # URL da API
