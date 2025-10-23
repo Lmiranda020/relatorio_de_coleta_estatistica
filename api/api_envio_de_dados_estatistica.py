@@ -294,14 +294,14 @@ def enviar_consolidado_para_api():
             "dados": dados_para_envio
         }
         
-        with st.expander("🔍 Detalhes da Requisição"):
-            st.write(f"**Competência:** {payload['competencia']}")
-            st.write(f"**Quantidade de registros:** {len(payload['dados'])}")
-            st.write(f"**Token:** ...{str(token)[-10:] if token else 'VAZIO'}")
+        # with st.expander("🔍 Detalhes da Requisição"):
+        #     st.write(f"**Competência:** {payload['competencia']}")
+        #     st.write(f"**Quantidade de registros:** {len(payload['dados'])}")
+        #     st.write(f"**Token:** ...{str(token)[-10:] if token else 'VAZIO'}")
             
-            if payload['dados']:
-                st.write("**Exemplo do primeiro registro:**")
-                st.json(payload['dados'][0])
+        #     if payload['dados']:
+        #         st.write("**Exemplo do primeiro registro:**")
+        #         st.json(payload['dados'][0])
         
         # Validar JSON
         try:
