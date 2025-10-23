@@ -56,7 +56,7 @@ class DatabaseManagerPostgres:
                 "sslmode": "require"  # IMPORTANTE para Supabase
             }
         except Exception as e:
-            st.info(f"❌ Erro ao configurar banco: {e}")
+            print(f"❌ Erro ao configurar banco: {e}")
             raise
         #o que transforma um valor passado como argumento em atributo da instância é você armazená-lo dentro de self
     
@@ -78,7 +78,7 @@ class DatabaseManagerPostgres:
         # psycopg2.connect() retorna é um objeto de conexão, que é como uma “linha invisível” entre o seu programa Python e o banco de dados. Por si só, ele não traz dados do banco nem retorna um valor útil como booleano ou tabela.
         # Ele só te dá essa porta aberta, que você vai usar depois 
         except Exception as e:
-            st.info(f"Erro na conexão com o banco: {e}")
+            print(f"Erro na conexão com o banco: {e}")
             raise
 
     # self em qualquer método da classe sempre representa a instância que vai ser criada a partir da classe, não importa em qual método você esteja.
@@ -100,13 +100,13 @@ class DatabaseManagerPostgres:
             
             tabela_existe = cursor.fetchone()[0]
             if not tabela_existe:
-                st.info("Tabelas não encontradas. Execute os comandos SQL no DBeaver primeiro.")
+                print("Tabelas não encontradas. Execute os comandos SQL no DBeaver primeiro.")
                 return False
             
             return True
             
         except Exception as e:
-            st.info(f"Erro ao verificar tabelas: {e}")
+            print(f"Erro ao verificar tabelas: {e}")
             return False
         finally:
             if conn:
@@ -145,13 +145,13 @@ class DatabaseManagerPostgres:
             self.adicionar_historico(cursor, ticket_id, nome, 'usuario', f"Ticket criado: {assunto or 'Sem assunto'}")
 
             conn.commit()
-            st.info(f"Ticket {ticket_id} criado com sucesso!")
+            print(f"Ticket {ticket_id} criado com sucesso!")
             return ticket_id
 
         except Exception as e:
             if conn:
                 conn.rollback()
-            st.info(f"Erro ao criar ticket: {e}")
+            print(f"Erro ao criar ticket: {e}")
             raise
         finally:
             if conn:
@@ -165,7 +165,7 @@ class DatabaseManagerPostgres:
                 VALUES (%s, %s, %s, %s)
             """, (ticket_id, autor, tipo, mensagem))
         except Exception as e:
-            st.info(f"Erro ao adicionar histórico: {e}")
+            print(f"Erro ao adicionar histórico: {e}")
             raise
 
     def listar_tickets(self, status=None, email_usuario=None): # aqui eu defino uma função para filtrar os tickets, passando o email e o status
@@ -194,7 +194,7 @@ class DatabaseManagerPostgres:
             return [dict(row) for row in resultados]
 
         except Exception as e:
-            st.info(f"Erro ao listar tickets: {e}")
+            print(f"Erro ao listar tickets: {e}")
             return []
         finally:
             if conn:
@@ -210,7 +210,7 @@ class DatabaseManagerPostgres:
             linha = cursor.fetchone()
             return dict(linha) if linha else None
         except Exception as e:
-            st.info(f"Erro ao obter ticket: {e}")
+            print(f"Erro ao obter ticket: {e}")
             return None
         finally:
             if conn:
@@ -237,7 +237,7 @@ class DatabaseManagerPostgres:
         except Exception as e:
             if conn:
                 conn.rollback()
-            st.info(f"Erro ao atualizar status: {e}")
+            print(f"Erro ao atualizar status: {e}")
             return False
         finally:
             if conn:
@@ -265,7 +265,7 @@ class DatabaseManagerPostgres:
         except Exception as e:
             if conn:
                 conn.rollback()
-            st.info(f"Erro ao adicionar resposta: {e}")
+            print(f"Erro ao adicionar resposta: {e}")
             return False
         finally:
             if conn:
@@ -281,7 +281,7 @@ class DatabaseManagerPostgres:
             resultado = cursor.fetchone()
             return resultado[0] if resultado else None
         except Exception as e:
-            st.info(f"Erro ao obter arquivo: {e}")
+            print(f"Erro ao obter arquivo: {e}")
             return None
         finally:
             if conn:
@@ -297,7 +297,7 @@ class DatabaseManagerPostgres:
             conn.close()
             return resultado[0] == 1
         except Exception as e:
-            st.info(f"Erro no teste de conexão: {e}")
+            print(f"Erro no teste de conexão: {e}")
             return False
         
     # ADICIONAR ESTAS FUNÇÕES NA SUA CLASSE DatabaseManagerPostgres:
@@ -337,7 +337,7 @@ class DatabaseManagerPostgres:
             return True, senha_retorno
             
         except Exception as e:
-            st.info(f"Erro ao criar usuário: {e}")
+            print(f"Erro ao criar usuário: {e}")
             return False, f"Erro ao criar usuário: {str(e)}"
 
     def validar_senha_usuario(self, email, senha):
@@ -346,7 +346,7 @@ class DatabaseManagerPostgres:
         
         try:
             # LOG 1: Tentativa de conexão
-            st.info(f"🔍 DEBUG: Tentando conectar ao banco para validar {email}")
+            print(f"🔍 DEBUG: Tentando conectar ao banco para validar {email}")
             
             query = """
             SELECT nome, unidade, senha_hash, salt, tentativas_login, conta_bloqueada, primeira_vez
@@ -355,7 +355,7 @@ class DatabaseManagerPostgres:
             """
             
             with self.get_connection() as conn:
-                st.info(f"✅ DEBUG: Conexão estabelecida com sucesso")
+                print(f"✅ DEBUG: Conexão estabelecida com sucesso")
                 
                 with conn.cursor() as cursor:
                     cursor.execute(query, (email,))
@@ -363,35 +363,35 @@ class DatabaseManagerPostgres:
                     
                     # LOG 2: Verifica se usuário foi encontrado
                     if not resultado:
-                        st.info(f"❌ DEBUG: Usuário {email} não encontrado no banco")
+                        print(f"❌ DEBUG: Usuário {email} não encontrado no banco")
                         return False, "Usuário não encontrado"
                     
-                    st.info(f"✅ DEBUG: Usuário {email} encontrado no banco")
+                    print(f"✅ DEBUG: Usuário {email} encontrado no banco")
                     
                     nome, unidade, senha_hash, salt, tentativas, bloqueada, primeira_vez = resultado
                     
                     # LOG 3: Status da conta
-                    st.info(f"🔍 DEBUG: Conta bloqueada? {bloqueada}")
-                    st.info(f"🔍 DEBUG: Tentativas: {tentativas}")
-                    st.info(f"🔍 DEBUG: Primeira vez? {primeira_vez}")
+                    print(f"🔍 DEBUG: Conta bloqueada? {bloqueada}")
+                    print(f"🔍 DEBUG: Tentativas: {tentativas}")
+                    print(f"🔍 DEBUG: Primeira vez? {primeira_vez}")
                     
                     # Verifica se conta está bloqueada
                     if bloqueada:
-                        st.info(f"⚠️ DEBUG: Conta está bloqueada")
+                        print(f"⚠️ DEBUG: Conta está bloqueada")
                         return False, "Conta bloqueada. Entre em contato com o suporte."
                     
                     # Verifica se excedeu tentativas
                     if tentativas >= 5:
-                        st.info(f"⚠️ DEBUG: Excedeu tentativas, bloqueando conta")
+                        print(f"⚠️ DEBUG: Excedeu tentativas, bloqueando conta")
                         self.bloquear_conta_usuario(email)
                         return False, "Muitas tentativas de login. Conta bloqueada."
                     
                     # LOG 4: Verificação de senha
-                    st.info(f"🔍 DEBUG: Verificando senha...")
-                    st.info(f"🔍 DEBUG: Hash no banco existe? {bool(senha_hash)}")
+                    print(f"🔍 DEBUG: Verificando senha...")
+                    print(f"🔍 DEBUG: Hash no banco existe? {bool(senha_hash)}")
 
                     if verificar_senha(senha, senha_hash):
-                        st.info(f"✅ DEBUG: Senha CORRETA!")
+                        print(f"✅ DEBUG: Senha CORRETA!")
                         # Login bem-sucedido
                         self.resetar_tentativas_login(email)
                         
@@ -400,7 +400,7 @@ class DatabaseManagerPostgres:
                         else:
                             return True, unidade
                     else:
-                        st.info(f"❌ DEBUG: Senha INCORRETA")
+                        print(f"❌ DEBUG: Senha INCORRETA")
                         # Senha incorreta - incrementa tentativas
                         self.incrementar_tentativas_login(email)
                         tentativas_restantes = 5 - (tentativas + 1)
@@ -408,9 +408,9 @@ class DatabaseManagerPostgres:
             
         except Exception as e:
             # LOG 5: Erro na conexão ou consulta
-            st.info(f"❌ DEBUG ERRO CRÍTICO: {e}")
+            print(f"❌ DEBUG ERRO CRÍTICO: {e}")
             import traceback
-            st.info(f"📋 DEBUG TRACEBACK:\n{traceback.format_exc()}")
+            print(f"📋 DEBUG TRACEBACK:\n{traceback.format_exc()}")
             return False, f"Erro ao validar login: {str(e)}"
 
     def verificar_usuario_existe(self, email):
@@ -425,7 +425,7 @@ class DatabaseManagerPostgres:
                     return count > 0
             
         except Exception as e:
-            st.info(f"Erro ao verificar usuário: {e}")
+            print(f"Erro ao verificar usuário: {e}")
             return False
 
     def incrementar_tentativas_login(self, email):
@@ -443,7 +443,7 @@ class DatabaseManagerPostgres:
                     conn.commit()
             
         except Exception as e:
-            st.info(f"Erro ao incrementar tentativas: {e}")
+            print(f"Erro ao incrementar tentativas: {e}")
 
     def resetar_tentativas_login(self, email):
         """Zera contador de tentativas após login bem-sucedido"""
@@ -456,7 +456,7 @@ class DatabaseManagerPostgres:
                     conn.commit()
             
         except Exception as e:
-            st.info(f"Erro ao resetar tentativas: {e}")
+            print(f"Erro ao resetar tentativas: {e}")
 
     def bloquear_conta_usuario(self, email):
         """Bloqueia conta do usuário após muitas tentativas"""
@@ -469,7 +469,7 @@ class DatabaseManagerPostgres:
                     conn.commit()
             
         except Exception as e:
-            st.info(f"Erro ao bloquear conta: {e}")
+            print(f"Erro ao bloquear conta: {e}")
 
     def atualizar_senha_usuario(self, email, nova_senha, pergunta_seguranca=None, resposta_seguranca=None):
         """Atualiza senha do usuário"""
@@ -499,7 +499,7 @@ class DatabaseManagerPostgres:
                     return cursor.rowcount > 0
             
         except Exception as e:
-            st.info(f"Erro ao atualizar senha: {e}")
+            print(f"Erro ao atualizar senha: {e}")
             return False
 
     def definir_senha_primeiro_acesso(self, email, nova_senha, pergunta_seguranca=None, resposta_seguranca=None):
@@ -518,7 +518,7 @@ class DatabaseManagerPostgres:
                     return resultado[0] if resultado and resultado[0] else None
             
         except Exception as e:
-            st.info(f"Erro ao obter pergunta de segurança: {e}")
+            print(f"Erro ao obter pergunta de segurança: {e}")
             return None
 
     def verificar_resposta_seguranca(self, email, resposta_informada):
@@ -541,7 +541,7 @@ class DatabaseManagerPostgres:
                     return verificar_senha(resposta_informada.lower().strip(), resposta_hash)
             
         except Exception as e:
-            st.info(f"Erro ao verificar resposta de segurança: {e}")
+            print(f"Erro ao verificar resposta de segurança: {e}")
             return False
 
     def listar_usuarios(self):
@@ -560,7 +560,7 @@ class DatabaseManagerPostgres:
                     return cursor.fetchall()
             
         except Exception as e:
-            st.info(f"Erro ao listar usuários: {e}")
+            print(f"Erro ao listar usuários: {e}")
             return []
 
     def resetar_senha_usuario(self, email, nova_senha_temporaria):
@@ -584,7 +584,7 @@ class DatabaseManagerPostgres:
                     return cursor.rowcount > 0
             
         except Exception as e:
-            st.info(f"Erro ao resetar senha: {e}")
+            print(f"Erro ao resetar senha: {e}")
             return False
 
     def desbloquear_conta_usuario(self, email):
@@ -603,7 +603,7 @@ class DatabaseManagerPostgres:
                     return cursor.rowcount > 0
             
         except Exception as e:
-            st.info(f"Erro ao desbloquear conta: {e}")
+            print(f"Erro ao desbloquear conta: {e}")
             return False
 
     def marcar_primeiro_acesso(self, email):
@@ -618,7 +618,7 @@ class DatabaseManagerPostgres:
                     return cursor.rowcount > 0
             
         except Exception as e:
-            st.info(f"Erro ao marcar primeiro acesso: {e}")
+            print(f"Erro ao marcar primeiro acesso: {e}")
             return False
 
     def reset_completo_usuario(self, email, nova_senha_temporaria):
@@ -643,7 +643,7 @@ class DatabaseManagerPostgres:
                     return cursor.rowcount > 0
             
         except Exception as e:
-            st.info(f"Erro ao executar reset completo: {e}")
+            print(f"Erro ao executar reset completo: {e}")
             return False
         
     def deletar_usuario(self, email_usuario):
@@ -653,7 +653,7 @@ class DatabaseManagerPostgres:
         try:
             # Proteção adicional - não permitir deletar o admin
             if email_usuario == 'custos@cejam.org.br':
-                st.info(f"Tentativa bloqueada de deletar usuário admin: {email_usuario}")
+                print(f"Tentativa bloqueada de deletar usuário admin: {email_usuario}")
                 return False
                 
             # Primeiro verifica se o usuário existe
@@ -667,7 +667,7 @@ class DatabaseManagerPostgres:
                     usuario_existe = cursor.fetchone()
                     
                     if not usuario_existe:
-                        st.info(f"Usuário não encontrado: {email_usuario}")
+                        print(f"Usuário não encontrado: {email_usuario}")
                         return False
                         
                     # Deleta o usuário
@@ -680,11 +680,11 @@ class DatabaseManagerPostgres:
                     # Commit das alterações
                     conn.commit()
                     
-                    st.info(f"Usuário {email_usuario} deletado. Linhas afetadas: {linhas_afetadas}")
+                    print(f"Usuário {email_usuario} deletado. Linhas afetadas: {linhas_afetadas}")
                     return linhas_afetadas > 0
             
         except Exception as e:
-            st.info(f"Erro ao deletar usuário {email_usuario}: {e}")
+            print(f"Erro ao deletar usuário {email_usuario}: {e}")
             return False
         
 
@@ -731,7 +731,7 @@ class DatabaseManagerPostgres:
             return True
             
         except Exception as e:
-            st.info(f"Erro ao criar tabela preenchimentos_finalizados: {e}")
+            print(f"Erro ao criar tabela preenchimentos_finalizados: {e}")
             return False
         finally:
             if conn:
@@ -774,12 +774,12 @@ class DatabaseManagerPostgres:
                 
                 resultado = cursor.fetchone()
                 if resultado is None:
-                    st.info(f"⚠️ AVISO: UPDATE não retornou ID")
+                    print(f"⚠️ AVISO: UPDATE não retornou ID")
                     registro_id = existe[0]  # Usa o ID que já tínhamos
                 else:
                     registro_id = resultado[0]
                 
-                st.info(f"✅ Registro ATUALIZADO - ID: {registro_id}")
+                print(f"✅ Registro ATUALIZADO - ID: {registro_id}")
                 
             else:
                 # Insere novo registro
@@ -792,32 +792,32 @@ class DatabaseManagerPostgres:
                 
                 resultado = cursor.fetchone()
                 if resultado is None:
-                    st.info(f"❌ ERRO: INSERT não retornou ID")
+                    print(f"❌ ERRO: INSERT não retornou ID")
                     conn.rollback()
                     return None
                 
                 registro_id = resultado[0]
-                st.info(f"✅ Registro CRIADO - ID: {registro_id}")
+                print(f"✅ Registro CRIADO - ID: {registro_id}")
             
             # Commit da transação
             conn.commit()
-            st.info(f"✅ Transação confirmada (commit) - ID final: {registro_id}")
+            print(f"✅ Transação confirmada (commit) - ID final: {registro_id}")
             
             return registro_id
             
         except Exception as e:
-            st.info(f"❌ Erro ao registrar preenchimento: {e}")
+            print(f"❌ Erro ao registrar preenchimento: {e}")
             if conn:
                 conn.rollback()
-                st.info(f"🔄 Rollback executado")
+                print(f"🔄 Rollback executado")
             import traceback
-            traceback.st.info_exc()
+            traceback.print_exc()
             return None
             
         finally:
             if conn:
                 conn.close()
-                st.info(f"🔌 Conexão fechada")
+                print(f"🔌 Conexão fechada")
 
     def obter_estatisticas_dashboard(self):
         """Obtém estatísticas para dashboard do painel de suporte"""
@@ -920,7 +920,7 @@ class DatabaseManagerPostgres:
             }
             
         except Exception as e:
-            st.info(f"Erro ao obter estatísticas: {e}")
+            print(f"Erro ao obter estatísticas: {e}")
             return None
         finally:
             if conn:
@@ -971,7 +971,7 @@ class DatabaseManagerPostgres:
             return cursor.fetchall()
             
         except Exception as e:
-            st.info(f"Erro ao obter relatório: {e}")
+            print(f"Erro ao obter relatório: {e}")
             return []
         finally:
             if conn:
@@ -1009,7 +1009,7 @@ class DatabaseManagerPostgres:
             }
             
         except Exception as e:
-            st.info(f"Erro ao obter unidades pendentes: {e}")
+            print(f"Erro ao obter unidades pendentes: {e}")
             return None
         finally:
             if conn:
@@ -1027,7 +1027,7 @@ class DatabaseManagerPostgres:
                         return {'nome': resultado[0], 'unidade': resultado[1]}
                     return None
         except Exception as e:
-            st.info(f"Erro ao buscar dados do usuário: {e}")
+            print(f"Erro ao buscar dados do usuário: {e}")
             return None
 
     def atualizar_status_envio_api(self, email_usuario, competencia, status):
@@ -1044,7 +1044,7 @@ class DatabaseManagerPostgres:
                     conn.commit()
                     return cursor.rowcount > 0
         except Exception as e:
-            st.info(f"Erro ao atualizar status de envio: {e}")
+            print(f"Erro ao atualizar status de envio: {e}")
             return False
 
     def criar_tabela_feedbacks(self):
@@ -1087,11 +1087,11 @@ class DatabaseManagerPostgres:
             """)
             
             conn.commit()
-            st.info("✅ Tabela feedbacks_usuarios criada/verificada com sucesso")
+            print("✅ Tabela feedbacks_usuarios criada/verificada com sucesso")
             return True
             
         except Exception as e:
-            st.info(f"❌ Erro ao criar tabela feedbacks_usuarios: {e}")
+            print(f"❌ Erro ao criar tabela feedbacks_usuarios: {e}")
             if conn:
                 conn.rollback()
             return False
@@ -1122,7 +1122,7 @@ class DatabaseManagerPostgres:
             
             # Valida avaliação
             if not isinstance(avaliacao, int) or avaliacao < 1 or avaliacao > 5:
-                st.info(f"⚠️ Avaliação inválida: {avaliacao}. Deve ser entre 1 e 5")
+                print(f"⚠️ Avaliação inválida: {avaliacao}. Deve ser entre 1 e 5")
                 return None
             
             cursor.execute("""
@@ -1135,11 +1135,11 @@ class DatabaseManagerPostgres:
             feedback_id = cursor.fetchone()[0]
             conn.commit()
             
-            st.info(f"✅ Feedback {feedback_id} registrado com sucesso")
+            print(f"✅ Feedback {feedback_id} registrado com sucesso")
             return feedback_id
             
         except Exception as e:
-            st.info(f"❌ Erro ao registrar feedback: {e}")
+            print(f"❌ Erro ao registrar feedback: {e}")
             if conn:
                 conn.rollback()
             return None
@@ -1226,7 +1226,7 @@ class DatabaseManagerPostgres:
             }
             
         except Exception as e:
-            st.info(f"❌ Erro ao obter estatísticas de feedbacks: {e}")
+            print(f"❌ Erro ao obter estatísticas de feedbacks: {e}")
             return None
         finally:
             if conn:
@@ -1289,7 +1289,7 @@ class DatabaseManagerPostgres:
             return cursor.fetchall()
             
         except Exception as e:
-            st.info(f"❌ Erro ao listar feedbacks: {e}")
+            print(f"❌ Erro ao listar feedbacks: {e}")
             return []
         finally:
             if conn:
@@ -1334,7 +1334,7 @@ class DatabaseManagerPostgres:
             return None
             
         except Exception as e:
-            st.info(f"❌ Erro ao buscar feedback por preenchimento: {e}")
+            print(f"❌ Erro ao buscar feedback por preenchimento: {e}")
             return None
         finally:
             if conn:
@@ -1366,7 +1366,7 @@ class DatabaseManagerPostgres:
             return count > 0
             
         except Exception as e:
-            st.info(f"❌ Erro ao verificar feedback: {e}")
+            print(f"❌ Erro ao verificar feedback: {e}")
             return False
         finally:
             if conn:
